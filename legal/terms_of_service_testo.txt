@@ -1,0 +1,93 @@
+TERMS OF SERVICE — FlagPost
+Last updated: March 2026
+
+By downloading or using FlagPost, you agree to be bound by these Terms of Service. If you do not agree, do not use the app.
+
+
+1. DESCRIPTION OF THE SERVICE
+
+FlagPost is a mobile application that allows travellers to find compatriots nearby, share local tips, and communicate via private chat. The service is provided free of charge and supported by advertising.
+
+
+2. ELIGIBILITY
+
+You must be at least 13 years old to use FlagPost. By using the app, you confirm that you meet this requirement.
+
+
+3. ACCOUNTS
+
+- FlagPost uses anonymous authentication — no email or password is required.
+- Each installation creates a unique anonymous account.
+- You are responsible for any activity that occurs under your account.
+- You must not impersonate other users or provide false information.
+
+
+4. USER-GENERATED CONTENT
+
+You are solely responsible for any content (messages, nicknames, text) that you post on FlagPost. By posting content, you grant FlagPost a non-exclusive, royalty-free licence to store and display that content as part of the service.
+
+You agree NOT to post content that:
+- Is illegal, harmful, threatening, abusive, harassing, or defamatory.
+- Contains hate speech based on race, ethnicity, religion, gender, sexual orientation, disability, or nationality.
+- Is sexually explicit or pornographic.
+- Infringes any intellectual property or privacy rights of third parties.
+- Contains spam, advertisements, or unsolicited commercial messages.
+- Spreads misinformation or deliberately false information.
+
+
+5. PROHIBITED CONDUCT
+
+You agree not to:
+- Use the app for any illegal purpose.
+- Attempt to access, tamper with, or disrupt the servers or infrastructure of FlagPost.
+- Use automated scripts or bots to interact with the service.
+- Harass, threaten, or intimidate other users.
+- Create multiple accounts to circumvent blocks or bans.
+
+
+6. CONTENT MODERATION AND ACCOUNT TERMINATION
+
+We reserve the right to remove any content and to suspend or terminate accounts that violate these Terms, at our sole discretion and without prior notice.
+
+
+7. REPORTING
+
+If you see content that violates these Terms, use the in-app "Report" feature. We review all reports and take appropriate action.
+
+
+8. LOCATION DATA
+
+By enabling location services for FlagPost, you consent to the collection of your approximate GPS position as described in our Privacy Policy. You can revoke this permission at any time in your device settings. The Radar feature will not be available without location access.
+
+
+9. ADVERTISING
+
+FlagPost displays banner advertisements provided by Google AdMob. By using the app, you consent to the display of ads.
+
+
+10. DISCLAIMER OF WARRANTIES
+
+FlagPost is provided "as is" without any warranty of any kind, express or implied. We do not guarantee that the service will be uninterrupted, error-free, or free of harmful components. Use the service at your own risk.
+
+
+11. LIMITATION OF LIABILITY
+
+To the maximum extent permitted by law, FlagPost and its developer shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of, or inability to use, the service.
+
+
+12. CHANGES TO THESE TERMS
+
+We may update these Terms from time to time. Continued use of the app after changes are posted constitutes your acceptance of the new Terms. We will update the "Last updated" date at the top of this page when changes are made.
+
+
+13. GOVERNING LAW
+
+These Terms are governed by the laws of Italy, without regard to conflict of law principles.
+
+
+14. CONTACT
+
+For questions about these Terms, contact us at:
+[YOUR EMAIL ADDRESS]
+
+© 2026 FlagPost. All rights reserved.

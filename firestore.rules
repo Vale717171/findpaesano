@@ -1,0 +1,176 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────
+    // FUNZIONI DI SUPPORTO
+    // ─────────────────────────────────────────
+
+    // L'utente è autenticato?
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // UID dell'utente autenticato
+    function uid() {
+      return request.auth.uid;
+    }
+
+    // ─────────────────────────────────────────
+    // UTENTI  /users/{userId}
+    // ─────────────────────────────────────────
+    match /users/{userId} {
+
+      // Tutti gli utenti autenticati possono leggere i profili.
+      // Necessario per Radar (vedere la bandiera altrui) e Chat.
+      allow read: if isAuth();
+
+      // Solo il proprietario può creare il proprio profilo.
+      // Validazione: nickname obbligatorio, 1–20 caratteri.
+      allow create: if isAuth()
+        && uid() == userId
+        && request.resource.data.keys().hasAll(['nickname', 'countryCode', 'countryFlag'])
+        && request.resource.data.nickname is string
+        && request.resource.data.nickname.size() >= 1
+        && request.resource.data.nickname.size() <= 20;
+
+      // Solo il proprietario può aggiornare il proprio profilo (es. posizione GPS).
+      allow update: if isAuth() && uid() == userId;
+
+      // Solo il proprietario può eliminare il proprio documento.
+      allow delete: if isAuth() && uid() == userId;
+
+      // ── Utenti bloccati (subcollection) ──────────────
+      match /blockedUsers/{blockedUid} {
+        // Solo il proprietario vede e gestisce la propria blocklist.
+        allow read, write: if isAuth() && uid() == userId;
+      }
+    }
+
+    // ─────────────────────────────────────────
+    // MESSAGGI DEL BOARD  /messages/{messageId}
+    // ─────────────────────────────────────────
+    match /messages/{messageId} {
+
+      // Tutti gli autenticati possono leggere i messaggi.
+      allow read: if isAuth();
+
+      // Creazione: authorUid deve essere il proprio UID.
+      // Validazione server-side: testo 1–300 caratteri.
+      // location e locationKey obbligatori: senza questi il messaggio
+      // non apparirebbe in nessuna città e sarebbe comunque irrecuperabile.
+      allow create: if isAuth()
+        && request.resource.data.authorUid == uid()
+        && request.resource.data.keys().hasAll(['text', 'category', 'authorUid', 'createdAt', 'location', 'locationKey'])
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 300
+        && request.resource.data.location is string
+        && request.resource.data.location.size() >= 1
+        && request.resource.data.locationKey is string
+        && request.resource.data.locationKey.size() >= 1;
+
+      // L'unico aggiornamento permesso è incrementare reportCount di 1.
+      // Nessun altro campo può essere modificato.
+      allow update: if isAuth()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reportCount'])
+        && request.resource.data.reportCount == resource.data.get('reportCount', 0) + 1;
+
+      // Solo l'autore può eliminare il proprio messaggio.
+      allow delete: if isAuth() && resource.data.authorUid == uid();
+    }
+
+    // ─────────────────────────────────────────
+    // SEGNALAZIONI  /reports/{reportId}
+    // ─────────────────────────────────────────
+    match /reports/{reportId} {
+
+      // I report non sono leggibili dal client — solo da admin via console.
+      allow read: if false;
+
+      // Chiunque autenticato può segnalare.
+      // reportedBy deve corrispondere al proprio UID (niente spam per conto altrui).
+      allow create: if isAuth()
+        && request.resource.data.reportedBy == uid()
+        && request.resource.data.messageId is string
+        && request.resource.data.keys().hasAll(['messageId', 'reportedBy', 'createdAt']);
+
+      // I report non sono modificabili o eliminabili.
+      allow update, delete: if false;
+    }
+
+    // ─────────────────────────────────────────
+    // RICHIESTE DI CHAT  /chatRequests/{requestId}
+    // ─────────────────────────────────────────
+    match /chatRequests/{requestId} {
+
+      // Solo mittente o destinatario possono leggere la richiesta.
+      allow read: if isAuth()
+        && (resource.data.fromUid == uid() || resource.data.toUid == uid());
+
+      // Solo il mittente può creare, e fromUid deve essere il proprio UID.
+      // Lo status deve essere 'pending' alla creazione — non si può creare
+      // una richiesta già accettata o rifiutata.
+      allow create: if isAuth()
+        && request.resource.data.fromUid == uid()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasAll(['fromUid', 'toUid', 'status', 'createdAt']);
+
+      // Solo il destinatario può aggiornare (accettare/rifiutare).
+      // Può modificare solo i campi 'status' e 'chatId', nient'altro.
+      allow update: if isAuth()
+        && resource.data.toUid == uid()
+        && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'chatId']);
+
+      allow delete: if false;
+    }
+
+    // ─────────────────────────────────────────
+    // CHAT  /chats/{chatId}
+    // ─────────────────────────────────────────
+    match /chats/{chatId} {
+
+      // Solo i partecipanti possono leggere la chat.
+      allow read: if isAuth()
+        && uid() in resource.data.participants;
+
+      // Un utente può creare una chat solo se è tra i partecipanti.
+      // La chat deve avere esattamente 2 partecipanti.
+      allow create: if isAuth()
+        && uid() in request.resource.data.participants
+        && request.resource.data.participants.size() == 2;
+
+      // Solo i partecipanti possono aggiornare (lastMessage, closedBy, ecc.).
+      allow update: if isAuth()
+        && uid() in resource.data.participants;
+
+      allow delete: if false;
+
+      // ── Messaggi della chat (subcollection) ──────────
+      match /messages/{messageId} {
+
+        // Solo i partecipanti della chat padre possono leggere.
+        // get() legge il documento chat per verificare l'appartenenza.
+        allow read: if isAuth()
+          && uid() in get(/databases/$(database)/documents/chats/$(chatId))
+              .data.participants;
+
+        // Solo i partecipanti possono scrivere.
+        // senderUid deve essere il proprio UID.
+        // Testo 1–500 caratteri (limite uguale al TextField dell'app).
+        allow create: if isAuth()
+          && uid() in get(/databases/$(database)/documents/chats/$(chatId))
+              .data.participants
+          && request.resource.data.senderUid == uid()
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1
+          && request.resource.data.text.size() <= 500;
+
+        // I messaggi non sono modificabili o eliminabili dal client.
+        allow update, delete: if false;
+      }
+    }
+
+  }
+}

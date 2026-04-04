@@ -1,0 +1,79 @@
+PRIVACY POLICY — FlagPost
+Last updated: March 2026
+
+This Privacy Policy explains how FlagPost ("we", "our", or "the app") collects, uses, and protects your information when you use the FlagPost mobile application.
+
+
+1. INFORMATION WE COLLECT
+
+Information you provide:
+- Nickname: a pseudonym of your choice (no real name required).
+- Country of origin: selected from a list during onboarding.
+- Travel status: whether you are currently travelling or planning a trip.
+- Destination: optionally provided if you are planning a trip.
+- Messages: text content posted on the Board or sent in private chats.
+
+Information collected automatically:
+- Approximate location: your GPS position is collected when you open the Radar screen. We apply a random offset of up to ±2 km before saving it, so your exact location is never stored or shared with other users.
+- Anonymous user ID: Firebase Authentication assigns a random anonymous identifier. No email, phone number, or personal account is required.
+
+
+2. HOW WE USE YOUR INFORMATION
+
+- To show your approximate position on the Radar map to other users of the same nationality who are nearby.
+- To display your nickname and country flag on the Board and in chats.
+- To enable private 1-to-1 chat between consenting users.
+- To allow you to report inappropriate content.
+
+
+3. ADVERTISING
+
+FlagPost uses Google AdMob to display banner advertisements. AdMob may collect and use data for ad personalisation according to Google's Privacy Policy (https://policies.google.com/privacy). You can opt out of personalised ads in your device settings.
+
+
+4. DATA SHARING
+
+We do not sell your personal data. Your data is shared only in these limited cases:
+- Other users: your nickname, country flag, and approximate location are visible to other authenticated users on the Radar and Board.
+- Firebase (Google): we use Firebase Firestore and Firebase Authentication, both operated by Google LLC, to store and process your data.
+- Google AdMob: for advertising purposes as described above.
+
+
+5. DATA RETENTION
+
+- Your data is retained for as long as your account exists.
+- Board messages are automatically archived after 7 days and remain accessible in the archive section.
+- You can delete your account and all associated data at any time from Settings → Delete account and data.
+
+
+6. YOUR RIGHTS (GDPR)
+
+If you are located in the European Economic Area, you have the right to:
+- Access the personal data we hold about you.
+- Request correction of inaccurate data.
+- Request deletion of your data (right to erasure) — use the in-app deletion feature or contact us.
+- Object to or restrict processing of your data.
+- Lodge a complaint with a supervisory authority.
+
+
+7. CHILDREN'S PRIVACY
+
+FlagPost is not intended for users under the age of 13. We do not knowingly collect data from children. If you believe a child has provided us with personal information, please contact us and we will delete it.
+
+
+8. SECURITY
+
+All data is transmitted over encrypted connections (HTTPS/TLS). Access to Firestore is protected by security rules that ensure each user can only read and modify their own data, and that messages and chats are only visible to authorised participants.
+
+
+9. CHANGES TO THIS POLICY
+
+We may update this Privacy Policy from time to time. We will notify you of any significant changes by updating the "Last updated" date at the top of this page.
+
+
+10. CONTACT
+
+If you have any questions about this Privacy Policy or your data, please contact us at:
+[YOUR EMAIL ADDRESS]
+
+© 2026 FlagPost. All rights reserved.

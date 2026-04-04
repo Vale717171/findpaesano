@@ -1,0 +1,25 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "findpaesano",
+          "appId": "1:1059263610954:android:a7f61c15391ed5ba43a6b3",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "findpaesano",
+          "configurations": {
+            "android": "1:1059263610954:android:a7f61c15391ed5ba43a6b3"
+          }
+        }
+      }
+    }
+  }
+}

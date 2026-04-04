@@ -1,0 +1,42 @@
+name: flagpost
+description: "Find compatriots nearby, share local tips and info."
+publish_to: 'none'
+version: 1.0.0+2
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.5.1
+  cloud_firestore: ^5.6.5
+  country_picker: ^2.0.27
+  geolocator: ^13.0.4
+  flutter_map: ^8.1.1
+  latlong2: ^0.9.1
+  flutter_launcher_icons: ^0.14.3
+  url_launcher: ^6.3.1
+  google_mobile_ads: ^5.3.0
+  shared_preferences: ^2.3.3
+  firebase_analytics: ^11.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/icon.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
