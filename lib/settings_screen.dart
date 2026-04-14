@@ -304,6 +304,31 @@ class SettingsScreen extends StatelessWidget {
 
           const Divider(),
 
+          // ── LEGAL ─────────────────────────────────────
+          _SectionHeader('Legal'),
+
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('Privacy Policy'),
+            trailing: const Icon(Icons.open_in_new, size: 16),
+            onTap: () => launchUrl(
+              Uri.parse('https://[PRIVACY_POLICY_URL]'),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.gavel_outlined),
+            title: const Text('Terms of Service'),
+            trailing: const Icon(Icons.open_in_new, size: 16),
+            onTap: () => launchUrl(
+              Uri.parse('https://[TERMS_URL]'),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+
+          const Divider(),
+
           // ── DANGER ZONE ───────────────────────────────
           _SectionHeader('Danger zone'),
 
