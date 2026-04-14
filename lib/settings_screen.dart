@@ -312,17 +312,17 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Privacy Policy'),
             trailing: const Icon(Icons.open_in_new, size: 16),
             onTap: () => launchUrl(
-              Uri.parse('https://[PRIVACY_POLICY_URL]'),
+              Uri.parse('https://vale717171.github.io/flagpost-privacy/'),
               mode: LaunchMode.externalApplication,
             ),
           ),
 
           ListTile(
             leading: const Icon(Icons.gavel_outlined),
-            title: const Text('Terms of Service'),
+            title: const Text('Terms and Conditions'),
             trailing: const Icon(Icons.open_in_new, size: 16),
             onTap: () => launchUrl(
-              Uri.parse('https://[TERMS_URL]'),
+              Uri.parse('https://www.privacypolicies.com/live/8c94f054-2778-430a-96df-f7cf545922b2'),
               mode: LaunchMode.externalApplication,
             ),
           ),
