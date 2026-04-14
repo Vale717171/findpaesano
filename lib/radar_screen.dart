@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -92,6 +93,7 @@ class _RadarScreenState extends State<RadarScreen> {
 
   Future<void> _initLocation() async {
     try {
+      // 1. Check if GPS service is enabled
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
@@ -103,31 +105,128 @@ class _RadarScreenState extends State<RadarScreen> {
         return;
       }
 
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
+      // 2. Check current permission status via permission_handler
+      var status = await Permission.locationWhenInUse.status;
+
+      // 3. If permanently denied → open app settings
+      if (status.isPermanentlyDenied) {
+        if (mounted) {
+          setState(() {
+            _error = 'Location permission permanently denied. Enable it from Settings.';
+            _isLoading = false;
+          });
+          await showDialog<void>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Permission required'),
+              content: const Text(
+                'Location permission has been permanently denied. '
+                'Open app settings to enable it.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(ctx).pop();
+                    openAppSettings();
+                  },
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      // 4. If not granted yet → show rationale dialog, then request
+      if (!status.isGranted) {
+        if (mounted) {
+          final proceed = await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Location needed'),
+              content: const Text(
+                'Per mostrarti i paesani vicini abbiamo bisogno della tua posizione. '
+                'Your exact position is never shared — only an approximate area of a few km.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: const Text('Not now'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('Allow'),
+                ),
+              ],
+            ),
+          );
+          if (proceed != true) {
+            setState(() {
+              _error = 'Location permission denied.';
+              _isLoading = false;
+            });
+            return;
+          }
+        }
+
+        status = await Permission.locationWhenInUse.request();
+
+        if (status.isPermanentlyDenied) {
+          if (mounted) {
+            setState(() {
+              _error = 'Location permission permanently denied. Enable it from Settings.';
+              _isLoading = false;
+            });
+            await showDialog<void>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('Permission required'),
+                content: const Text(
+                  'Location permission has been permanently denied. '
+                  'Open app settings to enable it.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      openAppSettings();
+                    },
+                    child: const Text('Open Settings'),
+                  ),
+                ],
+              ),
+            );
+          }
+          return;
+        }
+
+        if (!status.isGranted) {
           if (mounted) {
             setState(() {
               _error = 'Location permission denied.';
               _isLoading = false;
             });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location permission denied. Some features will be unavailable.'),
+              ),
+            );
           }
           return;
         }
       }
 
-      if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          setState(() {
-            _error =
-                'Location permission permanently denied. Enable it from Settings.';
-            _isLoading = false;
-          });
-        }
-        return;
-      }
-
+      // 5. Permission granted — get position
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
