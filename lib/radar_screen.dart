@@ -9,6 +9,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum FilterMode { compatriots, all }
+
 class RadarScreen extends StatefulWidget {
   const RadarScreen({super.key});
 
@@ -41,6 +43,9 @@ class _RadarScreenState extends State<RadarScreen> {
 
   // Banner privacy: visibile ad ogni avvio, dismissibile
   bool _showPrivacyBanner = true;
+
+  // ── Filtro visibilità ──────────────────────────
+  FilterMode _filterMode = FilterMode.compatriots;
 
   @override
   void initState() {
@@ -464,7 +469,8 @@ class _RadarScreenState extends State<RadarScreen> {
                   data['location'] as GeoPoint?;
               if (location == null) continue;
 
-              if (_myCountryCode != null &&
+              if (_filterMode == FilterMode.compatriots &&
+                  _myCountryCode != null &&
                   data['countryCode'] != _myCountryCode) {
                 continue;
               }
@@ -675,13 +681,7 @@ class _RadarScreenState extends State<RadarScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _searchLabel != null
-                            ? '$_searchLabel · '
-                                '${nearbyUsers.length} compatriot'
-                                '${nearbyUsers.length == 1 ? '' : 's'}'
-                            : '${_radiusKm.toInt()} km · '
-                                '${nearbyUsers.length} compatriot'
-                                '${nearbyUsers.length == 1 ? '' : 's'}',
+                        _buildBadgeLabel(nearbyUsers.length),
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -689,6 +689,43 @@ class _RadarScreenState extends State<RadarScreen> {
                               ? Colors.white
                               : Colors.black87,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Filtro compatrioti / tutti ─────────
+              Positioned(
+                top: 80,
+                right: 16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _FilterChip(
+                        label: _myCountryFlag != null
+                            ? '$_myCountryFlag Only'
+                            : 'Compatriots',
+                        selected: _filterMode == FilterMode.compatriots,
+                        onTap: () => setState(
+                            () => _filterMode = FilterMode.compatriots),
+                      ),
+                      _FilterChip(
+                        label: 'Everyone',
+                        selected: _filterMode == FilterMode.all,
+                        onTap: () =>
+                            setState(() => _filterMode = FilterMode.all),
                       ),
                     ],
                   ),
@@ -780,6 +817,15 @@ class _RadarScreenState extends State<RadarScreen> {
     );
   }
 
+  String _buildBadgeLabel(int count) {
+    final prefix = _searchLabel != null ? '$_searchLabel · ' : '${_radiusKm.toInt()} km · ';
+    if (_filterMode == FilterMode.compatriots) {
+      return '$prefix$count compatriot${count == 1 ? '' : 's'}';
+    } else {
+      return '$prefix$count user${count == 1 ? '' : 's'}';
+    }
+  }
+
   void _showUserInfo(
       BuildContext context, Map<String, dynamic> user) {
     showModalBottomSheet(
@@ -843,6 +889,41 @@ class _RadarScreenState extends State<RadarScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF2196F3) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: selected ? Colors.white : Colors.grey[600],
+          ),
         ),
       ),
     );
