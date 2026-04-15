@@ -401,7 +401,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Close chat'),
         content: const Text(
-            'Are you sure? The conversation will be permanently deleted.'),
+            'This conversation will be hidden from your list. The other person will not be affected.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

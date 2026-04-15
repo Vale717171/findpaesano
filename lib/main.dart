@@ -81,7 +81,29 @@ class FindPaesanoApp extends StatelessWidget {
                 );
               }
               if (snapshot.hasData) {
-                return const MainScreen();
+                final uid = snapshot.data!.uid;
+                return FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(uid)
+                      .get(),
+                  builder: (context, userSnapshot) {
+                    if (userSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    final data =
+                        userSnapshot.data?.data() as Map<String, dynamic>?;
+                    final nickname =
+                        data?['nickname'] as String? ?? '';
+                    if (nickname.isNotEmpty) {
+                      return const MainScreen();
+                    }
+                    return const OnboardingScreen();
+                  },
+                );
               }
               return const OnboardingScreen();
             },

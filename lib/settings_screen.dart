@@ -67,6 +67,36 @@ class SettingsScreen extends StatelessWidget {
       if (user == null) return;
       final uid = user.uid;
 
+      // ── STEP 1: delete the Firebase Auth account first ──────────────
+      // If this fails with requires-recent-login we stop here — no
+      // Firestore data has been touched yet, so the account is intact.
+      try {
+        await user.delete();
+      } on FirebaseAuthException catch (e) {
+        if (context.mounted) Navigator.of(context).pop(); // close spinner
+        if (e.code == 'requires-recent-login') {
+          // Sign the user out so they can re-authenticate, then retry.
+          await FirebaseAuth.instance.signOut();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Please sign in again to confirm account deletion.',
+                ),
+              ),
+            );
+          }
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error: ${e.message}')),
+            );
+          }
+        }
+        return; // abort — Firestore data is untouched
+      }
+
+      // ── STEP 2: Auth account deleted — now clean up Firestore ────────
       final allRefs = <DocumentReference>[];
 
       final messages = await FirebaseFirestore.instance
@@ -119,8 +149,6 @@ class SettingsScreen extends StatelessWidget {
           .collection('users')
           .doc(uid)
           .delete();
-
-      await user.delete();
 
       // Chiude il dialog di caricamento
       if (context.mounted) Navigator.of(context).pop();
@@ -274,18 +302,6 @@ class SettingsScreen extends StatelessWidget {
               MaterialPageRoute(
                   builder: (_) => const BlockedUsersScreen()),
             ),
-          ),
-
-          const Divider(),
-
-          // ── LINGUA ───────────────────────────────────
-          _SectionHeader('Language'),
-
-          const ListTile(
-            leading: Icon(Icons.language),
-            title: Text('App language'),
-            subtitle: Text('Coming soon'),
-            enabled: false,
           ),
 
           const Divider(),
