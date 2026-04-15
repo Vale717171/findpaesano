@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:country_picker/country_picker.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -18,6 +19,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final TextEditingController _destinationController = TextEditingController();
   String? _travelStatus;
   bool _isLoading = false;
+  bool _googleSignedIn = false;
 
   @override
   void dispose() {
@@ -29,8 +31,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _saveProfile() async {
     setState(() => _isLoading = true);
     try {
-      final userCredential = await FirebaseAuth.instance.signInAnonymously();
-      final uid = userCredential.user!.uid;
+      final String uid;
+      if (_googleSignedIn) {
+        uid = FirebaseAuth.instance.currentUser!.uid;
+      } else {
+        final userCredential = await FirebaseAuth.instance.signInAnonymously();
+        uid = userCredential.user!.uid;
+      }
 
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'nickname': _nicknameController.text.trim(),
@@ -51,6 +58,67 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) {
+        // User cancelled the Google picker
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+      final uid = userCredential.user!.uid;
+
+      // Check if this user already has a profile in Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (doc.exists) {
+        // Returning user — go straight to the app
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/home');
+        }
+        return;
+      }
+
+      // New user — pre-fill nickname with Google display name
+      final displayName = userCredential.user?.displayName ?? '';
+      if (displayName.isNotEmpty) {
+        final trimmed = displayName.length > 20
+            ? displayName.substring(0, 20)
+            : displayName;
+        _nicknameController.text = trimmed;
+      }
+
+      setState(() => _googleSignedIn = true);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Google sign-in successful! Complete your profile.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: $e')),
         );
       }
     }
@@ -136,6 +204,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         const SizedBox(height: 24),
         _PrivacyNotice(),
+        const SizedBox(height: 20),
+        const Row(
+          children: [
+            Expanded(child: Divider()),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12),
+              child: Text('or', style: TextStyle(color: Colors.grey)),
+            ),
+            Expanded(child: Divider()),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _isLoading ? null : _signInWithGoogle,
+            icon: const Icon(Icons.g_mobiledata, size: 28, color: Color(0xFFEA4335)),
+            label: const Text(
+              'Sign in with Google',
+              style: TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              side: const BorderSide(color: Colors.grey),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
         const Spacer(),
         SizedBox(
           width: double.infinity,
