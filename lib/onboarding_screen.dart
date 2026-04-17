@@ -29,21 +29,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _saveProfile() async {
+    if (_selectedCountry == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your country first.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      final String uid;
+      String? uid;
       if (_googleSignedIn) {
-        uid = FirebaseAuth.instance.currentUser!.uid;
+        uid = FirebaseAuth.instance.currentUser?.uid;
       } else {
         final userCredential = await FirebaseAuth.instance.signInAnonymously();
-        uid = userCredential.user!.uid;
+        uid = userCredential.user?.uid;
+      }
+
+      if (uid == null) {
+        throw StateError('Unable to determine the authenticated user.');
       }
 
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'nickname': _nicknameController.text.trim(),
-        'countryCode': _selectedCountry!.countryCode,
-        'countryName': _selectedCountry!.name,
-        'countryFlag': _selectedCountry!.flagEmoji,
+        'countryCode': _selectedCountry?.countryCode,
+        'countryName': _selectedCountry?.name,
+        'countryFlag': _selectedCountry?.flagEmoji,
         'travelStatus': _travelStatus,
         'destination': _travelStatus == 'planning'
             ? _destinationController.text.trim()
@@ -61,7 +72,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         );
       }
     }
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _signInWithGoogle() async {
