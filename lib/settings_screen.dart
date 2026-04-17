@@ -18,8 +18,8 @@ class SettingsScreen extends StatelessWidget {
     final key = mode == ThemeMode.dark
         ? 'dark'
         : mode == ThemeMode.light
-            ? 'light'
-            : 'system';
+        ? 'light'
+        : 'system';
     await prefs.setString('themeMode', key);
   }
 
@@ -47,7 +47,9 @@ class SettingsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
+    var loadingDialogShown = false;
     if (context.mounted) {
+      loadingDialogShown = true;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -64,141 +66,131 @@ class SettingsScreen extends StatelessWidget {
       );
     }
 
+    String? errorMessage;
+    var accountDeleted = false;
+
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        errorMessage = 'No authenticated user found.';
+        return;
+      }
       final uid = user.uid;
 
-      // ── STEP 1: delete the Firebase Auth account first ──────────────
-      // If this fails with requires-recent-login, re-authenticate
-      // silently (Google) or directly (anonymous) then retry.
-      // No Firestore data is touched until this succeeds.
+      // ── STEP 1: clean Firestore data while the user is still authenticated.
+      try {
+        final allRefs = <DocumentReference>[];
+
+        final messages = await FirebaseFirestore.instance
+            .collection('messages')
+            .where('authorUid', isEqualTo: uid)
+            .get();
+        allRefs.addAll(messages.docs.map((d) => d.reference));
+
+        final sentRequests = await FirebaseFirestore.instance
+            .collection('chatRequests')
+            .where('fromUid', isEqualTo: uid)
+            .get();
+        allRefs.addAll(sentRequests.docs.map((d) => d.reference));
+
+        final receivedRequests = await FirebaseFirestore.instance
+            .collection('chatRequests')
+            .where('toUid', isEqualTo: uid)
+            .get();
+        allRefs.addAll(receivedRequests.docs.map((d) => d.reference));
+
+        final chats = await FirebaseFirestore.instance
+            .collection('chats')
+            .where('participants', arrayContains: uid)
+            .get();
+        for (final chatDoc in chats.docs) {
+          allRefs.add(chatDoc.reference);
+          final chatMessages = await chatDoc.reference
+              .collection('messages')
+              .get();
+          allRefs.addAll(chatMessages.docs.map((d) => d.reference));
+        }
+
+        final blockedUsers = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .collection('blockedUsers')
+            .get();
+        allRefs.addAll(blockedUsers.docs.map((d) => d.reference));
+
+        for (int i = 0; i < allRefs.length; i += 400) {
+          final batch = FirebaseFirestore.instance.batch();
+          final chunk = allRefs.sublist(i, min(i + 400, allRefs.length));
+          for (final ref in chunk) {
+            batch.delete(ref);
+          }
+          await batch.commit();
+        }
+
+        await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+      } on FirebaseAuthException catch (e) {
+        errorMessage = e.message ?? e.code;
+        return;
+      }
+
+      // ── STEP 2: delete the auth account (reauth if needed).
       try {
         await user.delete();
       } on FirebaseAuthException catch (e) {
         if (e.code == 'requires-recent-login') {
-          final isGoogle = user.providerData
-              .any((p) => p.providerId == 'google.com');
-          if (isGoogle) {
-            // Re-authenticate via Google and immediately retry deletion.
-            try {
-              final googleUser = await GoogleSignIn().signIn();
-              if (googleUser == null) {
-                // User cancelled the Google sign-in sheet.
-                if (context.mounted) Navigator.of(context).pop();
-                return;
-              }
-              final googleAuth = await googleUser.authentication;
-              final credential = GoogleAuthProvider.credential(
-                accessToken: googleAuth.accessToken,
-                idToken: googleAuth.idToken,
-              );
-              await user.reauthenticateWithCredential(credential);
-              await user.delete(); // retry after re-auth
-            } on FirebaseAuthException catch (reAuthError) {
-              if (context.mounted) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text('Error: ${reAuthError.message}')),
-                );
-              }
-              return;
-            }
+          final isGoogle = user.providerData.any(
+            (p) => p.providerId == 'google.com',
+          );
+          if (!isGoogle) {
+            await user.delete();
           } else {
-            // Anonymous user — no re-auth needed, retry directly.
-            try {
-              await user.delete();
-            } on FirebaseAuthException catch (retryError) {
-              if (context.mounted) {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content: Text('Error: ${retryError.message}')),
-                );
-              }
+            final googleUser = await GoogleSignIn().signIn();
+            if (googleUser == null) {
+              errorMessage = 'Google re-authentication was cancelled.';
               return;
             }
+            final googleAuth = await googleUser.authentication;
+            if (googleAuth.accessToken == null && googleAuth.idToken == null) {
+              errorMessage =
+                  'Google did not return a valid authentication token.';
+              return;
+            }
+            final credential = GoogleAuthProvider.credential(
+              accessToken: googleAuth.accessToken,
+              idToken: googleAuth.idToken,
+            );
+            await user.reauthenticateWithCredential(credential);
+            await user.delete();
           }
         } else {
-          if (context.mounted) {
-            Navigator.of(context).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: ${e.message}')),
-            );
-          }
-          return; // abort — Firestore data is untouched
+          errorMessage = e.message ?? e.code;
+          return;
         }
       }
 
-      // ── STEP 2: Auth account deleted — now clean up Firestore ────────
-      final allRefs = <DocumentReference>[];
-
-      final messages = await FirebaseFirestore.instance
-          .collection('messages')
-          .where('authorUid', isEqualTo: uid)
-          .get();
-      allRefs.addAll(messages.docs.map((d) => d.reference));
-
-      final sentRequests = await FirebaseFirestore.instance
-          .collection('chatRequests')
-          .where('fromUid', isEqualTo: uid)
-          .get();
-      allRefs.addAll(sentRequests.docs.map((d) => d.reference));
-
-      final receivedRequests = await FirebaseFirestore.instance
-          .collection('chatRequests')
-          .where('toUid', isEqualTo: uid)
-          .get();
-      allRefs.addAll(receivedRequests.docs.map((d) => d.reference));
-
-      final chats = await FirebaseFirestore.instance
-          .collection('chats')
-          .where('participants', arrayContains: uid)
-          .get();
-      for (final chatDoc in chats.docs) {
-        allRefs.add(chatDoc.reference);
-        final chatMessages =
-            await chatDoc.reference.collection('messages').get();
-        allRefs.addAll(chatMessages.docs.map((d) => d.reference));
-      }
-
-      final blockedUsers = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .collection('blockedUsers')
-          .get();
-      allRefs.addAll(blockedUsers.docs.map((d) => d.reference));
-
-      for (int i = 0; i < allRefs.length; i += 400) {
-        final batch = FirebaseFirestore.instance.batch();
-        final chunk =
-            allRefs.sublist(i, min(i + 400, allRefs.length));
-        for (final ref in chunk) {
-          batch.delete(ref);
-        }
-        await batch.commit();
-      }
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .delete();
-
-      // Chiude il dialog di caricamento e porta alla schermata iniziale
-      if (context.mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-          (route) => false,
-        );
-      }
+      accountDeleted = true;
     } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+      errorMessage = '$e';
+    } finally {
+      if (loadingDialogShown && context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
       }
+    }
+
+    if (!context.mounted) return;
+
+    if (accountDeleted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        (route) => false,
+      );
+      return;
+    }
+
+    if (errorMessage != null && errorMessage.isNotEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $errorMessage')));
     }
   }
 
@@ -224,13 +216,12 @@ class SettingsScreen extends StatelessWidget {
           StreamBuilder<DocumentSnapshot>(
             stream: uid != null
                 ? FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(uid)
-                    .snapshots()
+                      .collection('users')
+                      .doc(uid)
+                      .snapshots()
                 : const Stream.empty(),
             builder: (context, snapshot) {
-              final data =
-                  snapshot.data?.data() as Map<String, dynamic>?;
+              final data = snapshot.data?.data() as Map<String, dynamic>?;
               final flag = data?['countryFlag'] ?? '🌍';
               final nickname = data?['nickname'] ?? '...';
               final country = data?['countryName'] ?? '';
@@ -240,16 +231,14 @@ class SettingsScreen extends StatelessWidget {
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: Colors.grey[100],
-                  child: Text(flag,
-                      style: const TextStyle(fontSize: 22)),
+                  child: Text(flag, style: const TextStyle(fontSize: 22)),
                 ),
                 title: Text(
                   nickname,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(
-                  status == 'planning' &&
-                          (destination?.isNotEmpty ?? false)
+                  status == 'planning' && (destination?.isNotEmpty ?? false)
                       ? '$country · Planning → $destination'
                       : country,
                 ),
@@ -257,11 +246,10 @@ class SettingsScreen extends StatelessWidget {
                   onPressed: data == null
                       ? null
                       : () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  EditProfileScreen(userData: data),
-                            ),
+                          MaterialPageRoute(
+                            builder: (_) => EditProfileScreen(userData: data),
                           ),
+                        ),
                   child: const Text('Edit'),
                 ),
               );
@@ -281,16 +269,16 @@ class SettingsScreen extends StatelessWidget {
                   themeMode == ThemeMode.dark
                       ? Icons.dark_mode
                       : themeMode == ThemeMode.light
-                          ? Icons.light_mode
-                          : Icons.brightness_auto,
+                      ? Icons.light_mode
+                      : Icons.brightness_auto,
                 ),
                 title: const Text('Theme'),
                 subtitle: Text(
                   themeMode == ThemeMode.dark
                       ? 'Dark'
                       : themeMode == ThemeMode.light
-                          ? 'Light'
-                          : 'System default',
+                      ? 'Light'
+                      : 'System default',
                 ),
                 onTap: () => showModalBottomSheet(
                   context: context,
@@ -298,8 +286,7 @@ class SettingsScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ListTile(
-                        leading:
-                            const Icon(Icons.brightness_auto),
+                        leading: const Icon(Icons.brightness_auto),
                         title: const Text('System default'),
                         onTap: () {
                           _saveTheme(ThemeMode.system);
@@ -339,8 +326,7 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Blocked users'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                  builder: (_) => const BlockedUsersScreen()),
+              MaterialPageRoute(builder: (_) => const BlockedUsersScreen()),
             ),
           ),
 
@@ -350,8 +336,7 @@ class SettingsScreen extends StatelessWidget {
           _SectionHeader('Support'),
 
           ListTile(
-            leading: const Icon(Icons.coffee,
-                color: Color(0xFFFFDD00)),
+            leading: const Icon(Icons.coffee, color: Color(0xFFFFDD00)),
             title: const Text('Buy me a coffee'),
             subtitle: const Text('Support FlagPost ☕'),
             trailing: const Icon(Icons.open_in_new, size: 16),
@@ -378,7 +363,9 @@ class SettingsScreen extends StatelessWidget {
             title: const Text('Terms and Conditions'),
             trailing: const Icon(Icons.open_in_new, size: 16),
             onTap: () => launchUrl(
-              Uri.parse('https://www.privacypolicies.com/live/8c94f054-2778-430a-96df-f7cf545922b2'),
+              Uri.parse(
+                'https://www.privacypolicies.com/live/8c94f054-2778-430a-96df-f7cf545922b2',
+              ),
               mode: LaunchMode.externalApplication,
             ),
           ),
@@ -403,14 +390,14 @@ class SettingsScreen extends StatelessWidget {
           _SectionHeader('Danger zone'),
 
           ListTile(
-            leading: const Icon(Icons.delete_forever,
-                color: Colors.red),
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
             title: const Text(
               'Delete account and data',
               style: TextStyle(color: Colors.red),
             ),
             subtitle: const Text(
-                'Permanently removes your profile and all data'),
+              'Permanently removes your profile and all data',
+            ),
             onTap: () => _deleteAccount(context),
           ),
         ],
@@ -465,10 +452,10 @@ class BlockedUsersScreen extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: uid != null
             ? FirebaseFirestore.instance
-                .collection('users')
-                .doc(uid)
-                .collection('blockedUsers')
-                .snapshots()
+                  .collection('users')
+                  .doc(uid)
+                  .collection('blockedUsers')
+                  .snapshots()
             : const Stream.empty(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -480,13 +467,15 @@ class BlockedUsersScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 64, color: Colors.grey[300]),
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 64,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No blocked users',
-                    style: TextStyle(
-                        color: Colors.grey[400], fontSize: 16),
+                    style: TextStyle(color: Colors.grey[400], fontSize: 16),
                   ),
                 ],
               ),
@@ -507,28 +496,23 @@ class BlockedUsersScreen extends StatelessWidget {
                     .doc(blockedUid)
                     .get(),
                 builder: (context, userSnapshot) {
-                  final userData = userSnapshot.data?.data()
-                      as Map<String, dynamic>?;
+                  final userData =
+                      userSnapshot.data?.data() as Map<String, dynamic>?;
                   final flag = userData?['countryFlag'] ?? '🌍';
-                  final nickname =
-                      userData?['nickname'] ?? 'Unknown user';
+                  final nickname = userData?['nickname'] ?? 'Unknown user';
 
                   return ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.grey[100],
-                      child: Text(flag,
-                          style: const TextStyle(fontSize: 22)),
+                      child: Text(flag, style: const TextStyle(fontSize: 22)),
                     ),
                     title: Text(nickname),
                     trailing: TextButton(
                       onPressed: () async {
                         await _unblock(blockedUid);
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    '$nickname unblocked.')),
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('$nickname unblocked.')),
                           );
                         }
                       },

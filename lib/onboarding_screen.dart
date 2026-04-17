@@ -67,9 +67,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
     if (mounted) {
@@ -80,21 +80,45 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      final googleUser = await GoogleSignIn().signIn();
+      final googleSignIn = GoogleSignIn();
+      final googleUser = await googleSignIn.signIn();
       if (googleUser == null) {
         // User cancelled the Google picker
-        setState(() => _isLoading = false);
         return;
       }
 
       final googleAuth = await googleUser.authentication;
+      if (googleAuth.accessToken == null && googleAuth.idToken == null) {
+        throw FirebaseAuthException(
+          code: 'missing-google-token',
+          message: 'Google did not return a valid authentication token.',
+        );
+      }
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
+      final auth = FirebaseAuth.instance;
+      UserCredential userCredential;
+      final currentUser = auth.currentUser;
+
+      // If the current session is anonymous, upgrade it to Google account.
+      if (currentUser != null && currentUser.isAnonymous) {
+        try {
+          userCredential = await currentUser.linkWithCredential(credential);
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'credential-already-in-use' ||
+              e.code == 'provider-already-linked') {
+            userCredential = await auth.signInWithCredential(credential);
+          } else {
+            rethrow;
+          }
+        }
+      } else {
+        userCredential = await auth.signInWithCredential(credential);
+      }
+
       final uid = userCredential.user!.uid;
 
       // Check if this user already has a profile in Firestore
@@ -125,17 +149,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Google sign-in successful! Complete your profile.')),
+            content: Text('Google sign-in successful! Complete your profile.'),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        final message = e.message ?? e.code;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: $message')),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google sign-in failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Google sign-in failed: $e')));
       }
     }
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -162,10 +196,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Widget _buildCurrentStep() {
     switch (_currentStep) {
-      case 0: return _buildCountryStep();
-      case 1: return _buildNicknameStep();
-      case 2: return _buildTravelStatusStep();
-      default: return const SizedBox();
+      case 0:
+        return _buildCountryStep();
+      case 1:
+        return _buildNicknameStep();
+      case 2:
+        return _buildTravelStatusStep();
+      default:
+        return const SizedBox();
     }
   }
 
@@ -173,9 +211,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Hey! 👋', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        const Text(
+          'Hey! 👋',
+          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
-        const Text('Where are you from?', style: TextStyle(fontSize: 18, color: Colors.grey)),
+        const Text(
+          'Where are you from?',
+          style: TextStyle(fontSize: 18, color: Colors.grey),
+        ),
         const SizedBox(height: 32),
         GestureDetector(
           onTap: () {
@@ -206,17 +250,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   _selectedCountry?.name ?? 'Tap to select your country',
                   style: TextStyle(
                     fontSize: 16,
-                    color: _selectedCountry == null ? Colors.grey : Colors.black87,
+                    color: _selectedCountry == null
+                        ? Colors.grey
+                        : Colors.black87,
                   ),
                 ),
                 const Spacer(),
-                const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Colors.grey,
+                ),
               ],
             ),
           ),
         ),
         const SizedBox(height: 24),
-        _PrivacyNotice(),
+        const PrivacyNotice(),
         const SizedBox(height: 20),
         const Row(
           children: [
@@ -233,7 +283,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _isLoading ? null : _signInWithGoogle,
-            icon: const Icon(Icons.g_mobiledata, size: 28, color: Color(0xFFEA4335)),
+            icon: const Icon(
+              Icons.g_mobiledata,
+              size: 28,
+              color: Color(0xFFEA4335),
+            ),
             label: const Text(
               'Sign in with Google',
               style: TextStyle(fontSize: 16, color: Colors.black87),
@@ -243,7 +297,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.symmetric(vertical: 14),
               side: const BorderSide(color: Colors.grey),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ),
@@ -251,14 +306,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _selectedCountry == null ? null : () {
-              setState(() => _currentStep = 1);
-            },
+            onPressed: _selectedCountry == null
+                ? null
+                : () {
+                    setState(() => _currentStep = 1);
+                  },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF2196F3),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Text('Next', style: TextStyle(fontSize: 16)),
           ),
@@ -271,12 +330,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${_selectedCountry?.flagEmoji} Welcome!',
-          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        Text(
+          '${_selectedCountry?.flagEmoji} Welcome!',
+          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 8),
-        const Text('Choose a nickname', style: TextStyle(fontSize: 18, color: Colors.grey)),
+        const Text(
+          'Choose a nickname',
+          style: TextStyle(fontSize: 18, color: Colors.grey),
+        ),
         const SizedBox(height: 4),
-        const Text('No real name required 😉', style: TextStyle(fontSize: 13, color: Colors.grey)),
+        const Text(
+          'No real name required 😉',
+          style: TextStyle(fontSize: 13, color: Colors.grey),
+        ),
         const SizedBox(height: 32),
         TextField(
           controller: _nicknameController,
@@ -301,14 +368,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
-                onPressed: _nicknameController.text.trim().isEmpty ? null : () {
-                  setState(() => _currentStep = 2);
-                },
+                onPressed: _nicknameController.text.trim().isEmpty
+                    ? null
+                    : () {
+                        setState(() => _currentStep = 2);
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2196F3),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Next', style: TextStyle(fontSize: 16)),
               ),
@@ -324,11 +395,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Almost there! 🌍',
-            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          const Text(
+            'Almost there! 🌍',
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
-          const Text('What\'s your situation?',
-            style: TextStyle(fontSize: 18, color: Colors.grey)),
+          const Text(
+            'What\'s your situation?',
+            style: TextStyle(fontSize: 18, color: Colors.grey),
+          ),
           const SizedBox(height: 32),
           GestureDetector(
             onTap: () => setState(() {
@@ -339,26 +414,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _travelStatus == 'here' ? const Color(0xFF2196F3) : Colors.grey[100],
+                color: _travelStatus == 'here'
+                    ? const Color(0xFF2196F3)
+                    : Colors.grey[100],
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _travelStatus == 'here' ? const Color(0xFF2196F3) : Colors.grey[300]!,
+                  color: _travelStatus == 'here'
+                      ? const Color(0xFF2196F3)
+                      : Colors.grey[300]!,
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('✈️ I\'m already there!',
+                  Text(
+                    '✈️ I\'m already there!',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: _travelStatus == 'here' ? Colors.white : Colors.black87,
+                      color: _travelStatus == 'here'
+                          ? Colors.white
+                          : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text('Use my current location',
+                  Text(
+                    'Use my current location',
                     style: TextStyle(
-                      color: _travelStatus == 'here' ? Colors.white70 : Colors.grey,
+                      color: _travelStatus == 'here'
+                          ? Colors.white70
+                          : Colors.grey,
                     ),
                   ),
                 ],
@@ -372,26 +457,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _travelStatus == 'planning' ? const Color(0xFF2196F3) : Colors.grey[100],
+                color: _travelStatus == 'planning'
+                    ? const Color(0xFF2196F3)
+                    : Colors.grey[100],
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: _travelStatus == 'planning' ? const Color(0xFF2196F3) : Colors.grey[300]!,
+                  color: _travelStatus == 'planning'
+                      ? const Color(0xFF2196F3)
+                      : Colors.grey[300]!,
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('🔍 Planning my trip',
+                  Text(
+                    '🔍 Planning my trip',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: _travelStatus == 'planning' ? Colors.white : Colors.black87,
+                      color: _travelStatus == 'planning'
+                          ? Colors.white
+                          : Colors.black87,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text('I want info about a destination',
+                  Text(
+                    'I want info about a destination',
                     style: TextStyle(
-                      color: _travelStatus == 'planning' ? Colors.white70 : Colors.grey,
+                      color: _travelStatus == 'planning'
+                          ? Colors.white70
+                          : Colors.grey,
                     ),
                   ),
                 ],
@@ -399,7 +494,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          _PrivacyNotice(),
+          const PrivacyNotice(),
           if (_travelStatus == 'planning') ...[
             const SizedBox(height: 16),
             TextField(
@@ -409,10 +504,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               decoration: InputDecoration(
                 hintText: 'Where are you going? (e.g. Tokyo, Reykjavik...)',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF2196F3), width: 2),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF2196F3),
+                    width: 2,
+                  ),
                 ),
               ),
             ),
@@ -427,18 +527,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: (_travelStatus == null ||
-                      (_travelStatus == 'planning' && _destinationController.text.trim().isEmpty) ||
-                      _isLoading) ? null : _saveProfile,
+                  onPressed:
+                      (_travelStatus == null ||
+                          (_travelStatus == 'planning' &&
+                              _destinationController.text.trim().isEmpty) ||
+                          _isLoading)
+                      ? null
+                      : _saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2196F3),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Let\'s go!', style: TextStyle(fontSize: 16)),
+                      : const Text(
+                          'Let\'s go!',
+                          style: TextStyle(fontSize: 16),
+                        ),
                 ),
               ),
             ],
@@ -449,7 +558,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-class _PrivacyNotice extends StatelessWidget {
+class PrivacyNotice extends StatelessWidget {
+  const PrivacyNotice({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
