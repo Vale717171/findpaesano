@@ -2,10 +2,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'main.dart';
 import 'edit_profile_screen.dart';
+import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -68,32 +70,65 @@ class SettingsScreen extends StatelessWidget {
       final uid = user.uid;
 
       // ── STEP 1: delete the Firebase Auth account first ──────────────
-      // If this fails with requires-recent-login we stop here — no
-      // Firestore data has been touched yet, so the account is intact.
+      // If this fails with requires-recent-login, re-authenticate
+      // silently (Google) or directly (anonymous) then retry.
+      // No Firestore data is touched until this succeeds.
       try {
         await user.delete();
       } on FirebaseAuthException catch (e) {
-        if (context.mounted) Navigator.of(context).pop(); // close spinner
         if (e.code == 'requires-recent-login') {
-          // Sign the user out so they can re-authenticate, then retry.
-          await FirebaseAuth.instance.signOut();
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Please sign in again to confirm account deletion.',
-                ),
-              ),
-            );
+          final isGoogle = user.providerData
+              .any((p) => p.providerId == 'google.com');
+          if (isGoogle) {
+            // Re-authenticate via Google and immediately retry deletion.
+            try {
+              final googleUser = await GoogleSignIn().signIn();
+              if (googleUser == null) {
+                // User cancelled the Google sign-in sheet.
+                if (context.mounted) Navigator.of(context).pop();
+                return;
+              }
+              final googleAuth = await googleUser.authentication;
+              final credential = GoogleAuthProvider.credential(
+                accessToken: googleAuth.accessToken,
+                idToken: googleAuth.idToken,
+              );
+              await user.reauthenticateWithCredential(credential);
+              await user.delete(); // retry after re-auth
+            } on FirebaseAuthException catch (reAuthError) {
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text('Error: ${reAuthError.message}')),
+                );
+              }
+              return;
+            }
+          } else {
+            // Anonymous user — no re-auth needed, retry directly.
+            try {
+              await user.delete();
+            } on FirebaseAuthException catch (retryError) {
+              if (context.mounted) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                      content: Text('Error: ${retryError.message}')),
+                );
+              }
+              return;
+            }
           }
         } else {
           if (context.mounted) {
+            Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Error: ${e.message}')),
             );
           }
+          return; // abort — Firestore data is untouched
         }
-        return; // abort — Firestore data is untouched
       }
 
       // ── STEP 2: Auth account deleted — now clean up Firestore ────────
@@ -150,8 +185,13 @@ class SettingsScreen extends StatelessWidget {
           .doc(uid)
           .delete();
 
-      // Chiude il dialog di caricamento
-      if (context.mounted) Navigator.of(context).pop();
+      // Chiude il dialog di caricamento e porta alla schermata iniziale
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+          (route) => false,
+        );
+      }
     } catch (e) {
       if (context.mounted) {
         Navigator.of(context).pop();
@@ -341,6 +381,20 @@ class SettingsScreen extends StatelessWidget {
               Uri.parse('https://www.privacypolicies.com/live/8c94f054-2778-430a-96df-f7cf545922b2'),
               mode: LaunchMode.externalApplication,
             ),
+          ),
+
+          const Divider(),
+
+          // ── ACCOUNT ───────────────────────────────────
+          _SectionHeader('Account'),
+
+          ListTile(
+            leading: const Icon(Icons.logout),
+            title: const Text('Sign out'),
+            onTap: () async {
+              await GoogleSignIn().signOut();
+              await FirebaseAuth.instance.signOut();
+            },
           ),
 
           const Divider(),
