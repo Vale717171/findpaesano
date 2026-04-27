@@ -440,30 +440,30 @@ class _MessageListState extends State<_MessageList> {
             .limit(_limit);
 
     return StreamBuilder<QuerySnapshot>(
-      stream: query.snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return _emptyState();
+      stream: currentUid != null
+          ? FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUid)
+              .collection('blockedUsers')
+              .snapshots()
+          : const Stream.empty(),
+      builder: (context, blockedSnapshot) {
+        final blockedIds = <String>{};
+        if (blockedSnapshot.hasData) {
+          for (final doc in blockedSnapshot.data!.docs) {
+            blockedIds.add(doc.id);
+          }
         }
 
         return StreamBuilder<QuerySnapshot>(
-          stream: currentUid != null
-              ? FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(currentUid)
-                  .collection('blockedUsers')
-                  .snapshots()
-              : const Stream.empty(),
-          builder: (context, blockedSnapshot) {
-            final blockedIds = <String>{};
-            if (blockedSnapshot.hasData) {
-              for (final doc in blockedSnapshot.data!.docs) {
-                blockedIds.add(doc.id);
-              }
+          stream: query.snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return _emptyState();
             }
 
             final filteredDocs = snapshot.data!.docs.where((doc) {
@@ -487,12 +487,10 @@ class _MessageListState extends State<_MessageList> {
               itemBuilder: (context, index) {
                 if (index == filteredDocs.length) {
                   return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Center(
                       child: TextButton.icon(
-                        onPressed: () =>
-                            setState(() => _limit += 50),
+                        onPressed: () => setState(() => _limit += 50),
                         icon: const Icon(Icons.expand_more),
                         label: const Text('Load more'),
                       ),
