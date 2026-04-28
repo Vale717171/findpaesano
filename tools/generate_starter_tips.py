@@ -1,0 +1,427 @@
+import json
+import os
+
+try:
+    import geonamescache
+    gc = geonamescache.GeonamesCache()
+    cities_cache = gc.get_cities()
+    countries_cache = gc.get_countries()
+    HAS_GC = True
+except ImportError:
+    HAS_GC = False
+
+try:
+    import pycountry
+    HAS_PYCOUNTRY = True
+except ImportError:
+    HAS_PYCOUNTRY = False
+
+def get_country_name(country_code, hardcoded_name):
+    if HAS_PYCOUNTRY and country_code:
+        try:
+            return pycountry.countries.get(alpha_2=country_code).name
+        except AttributeError:
+            pass
+    if HAS_GC and country_code:
+        for c in countries_cache.values():
+            if c['iso'] == country_code:
+                return c['name']
+    return hardcoded_name
+
+CITIES_META = {
+    "rome": {"displayName": "Rome", "country": "Italy", "country_code": "IT", "aliases": ["roma"]},
+    "milan": {"displayName": "Milan", "country": "Italy", "country_code": "IT", "aliases": ["milano"]},
+    "london": {"displayName": "London", "country": "United Kingdom", "country_code": "GB", "aliases": ["ldn"]},
+    "paris": {"displayName": "Paris", "country": "France", "country_code": "FR", "aliases": []},
+    "barcelona": {"displayName": "Barcelona", "country": "Spain", "country_code": "ES", "aliases": ["bcn"]},
+    "madrid": {"displayName": "Madrid", "country": "Spain", "country_code": "ES", "aliases": []},
+    "berlin": {"displayName": "Berlin", "country": "Germany", "country_code": "DE", "aliases": []},
+    "amsterdam": {"displayName": "Amsterdam", "country": "Netherlands", "country_code": "NL", "aliases": ["adam"]},
+    "lisbon": {"displayName": "Lisbon", "country": "Portugal", "country_code": "PT", "aliases": ["lisboa"]},
+    "prague": {"displayName": "Prague", "country": "Czechia", "country_code": "CZ", "aliases": ["praha"]},
+    "vienna": {"displayName": "Vienna", "country": "Austria", "country_code": "AT", "aliases": ["wien"]},
+    "new york": {"displayName": "New York", "country": "United States", "country_code": "US", "aliases": ["nyc", "new york city"]},
+    "tokyo": {"displayName": "Tokyo", "country": "Japan", "country_code": "JP", "aliases": []},
+}
+
+FALLBACK_TIPS = {
+    "Food": [
+        {
+            "title": "Share practical food tips",
+            "body": "Useful notes include affordable meals, local dishes, bakeries, markets, and places where prices are clearly displayed."
+        },
+        {
+            "title": "Highlight everyday eating habits",
+            "body": "Good notes can mention standard tipping practices, meal times, and whether reservations are generally expected for dinner."
+        }
+    ],
+    "Transport": [
+        {
+            "title": "Help visitors avoid transport mistakes",
+            "body": "Useful notes include ticket rules, airport transfers, zones, late-night options, and common mistakes made by first-time visitors."
+        },
+        {
+            "title": "Share practical transit insights",
+            "body": "Notes about payment methods, the reliability of local apps, or navigating busy central stations are highly valuable for new arrivals."
+        }
+    ],
+    "Places": [
+        {
+            "title": "Highlight underrated spots",
+            "body": "Useful notes include quiet areas, viewpoints, lesser-known parks, and practical details about popular attractions."
+        },
+        {
+            "title": "Focus on the local rhythm",
+            "body": "Share suggestions about neighborhoods worth a walk, times of day to avoid crowds, and public spaces where locals actually spend time."
+        }
+    ],
+    "Warning": [
+        {
+            "title": "Share practical cautions",
+            "body": "Useful notes include common tourist traps, known scams, and areas where extra awareness is needed."
+        },
+        {
+            "title": "Help prevent common mistakes",
+            "body": "Warnings about local rules, etiquette missteps, or weather-related preparations can help visitors have a smoother trip."
+        }
+    ],
+    "Other": [
+        {
+            "title": "Share useful insights",
+            "body": "Any practical note that doesn't fit elsewhere, like local etiquette, payment habits, or cultural norms."
+        },
+        {
+            "title": "Provide everyday practicalities",
+            "body": "Details about public restrooms, tap water safety, or finding reliable Wi-Fi often make a big difference for travelers."
+        }
+    ]
+}
+
+CITY_CONTENT = {
+    "rome": {
+        "Food": [
+            {"title": "Think in neighborhoods, not only landmarks", "body": "Useful food notes for Rome often help visitors move beyond the streets immediately around major monuments and look for simple places where menus, prices, and cover charges are clear."},
+            {"title": "Mention everyday food stops", "body": "Good notes can include bakeries, markets, coffee bars, simple lunch places, and areas where a visitor can eat without turning every meal into a formal restaurant visit."}
+        ],
+        "Transport": [
+            {"title": "Share bus and tram practicalities", "body": "Useful notes explain ticket validation, common bus routes for areas without metro access, and how to handle crowded transit during peak hours."},
+            {"title": "Help with airport connections", "body": "Good notes compare the practical aspects of train versus bus transfers from Fiumicino or Ciampino, particularly regarding luggage handling."}
+        ],
+        "Places": [
+            {"title": "Highlight quieter neighborhoods", "body": "Suggesting areas for a relaxed evening walk away from the historic center can be extremely helpful for visitors feeling overwhelmed by crowds."},
+            {"title": "Practical details on sights", "body": "Notes on booking requirements, dress codes for religious sites, or simply the best times to visit popular viewpoints add a lot of value."}
+        ],
+        "Warning": [
+            {"title": "Explain common street interactions", "body": "Helpful cautions include how to confidently decline unwanted items from street sellers and recognizing common distraction techniques in busy areas."},
+            {"title": "Clarify local rules", "body": "Reminders about sitting on historic steps or eating near monuments help visitors avoid unintentional fines and respect the city."}
+        ],
+        "Other": [
+            {"title": "Explain the coffee culture", "body": "Notes about drinking coffee standing at the bar versus sitting down, and standard payment habits at cafes, are classic local tips."},
+            {"title": "Mention public water access", "body": "Information about the free public drinking fountains (nasoni) and bringing reusable bottles is always appreciated."}
+        ]
+    },
+    "milan": {
+        "Food": [
+            {"title": "Highlight everyday lunch habits", "body": "Good food notes for Milan include simple lunch spots, bakeries, markets, aperitivo habits, and areas where prices are clearly displayed."},
+            {"title": "Explain the aperitivo culture", "body": "Clarifying how aperitivo works—whether it's a buffet or small plates, and typical timing—is a great tip for first-time visitors."}
+        ],
+        "Transport": [
+            {"title": "Navigate the metro system", "body": "Useful notes might cover contactless payment at the gates, understanding the suburban rail lines, and navigating the main train stations."},
+            {"title": "Airport transfer comparisons", "body": "Comparing options from Malpensa, Linate, or Bergamo in terms of convenience and time helps travelers plan better."}
+        ],
+        "Places": [
+            {"title": "Look beyond the Duomo", "body": "Highlighting vibrant districts, modern architecture areas, or quiet canals can show visitors a different side of the city."},
+            {"title": "Suggest art and design spots", "body": "Notes on smaller galleries, design showrooms, or public art installations fit well with the city's character."}
+        ],
+        "Warning": [
+            {"title": "Navigating busy squares", "body": "Cautions about overly friendly strangers offering bracelets or bird seed in central tourist areas are always helpful."},
+            {"title": "Awareness on transit", "body": "Reminding visitors to keep an eye on belongings during rush hour on the metro or at main train stations is a practical note."}
+        ],
+        "Other": [
+            {"title": "Discuss local dress norms", "body": "Brief, non-judgmental notes on general attire expectations for dining or going out can help visitors feel more comfortable."},
+            {"title": "Navigating business hours", "body": "Explaining typical business hours, including mid-day closures for some smaller shops, helps visitors plan their days."}
+        ]
+    },
+    "london": {
+        "Food": [
+            {"title": "Share everyday meal options", "body": "Useful notes often cover markets, simple pubs, reliable bakery chains, and areas known for diverse, affordable food."},
+            {"title": "Explain pub culture", "body": "Clarifying how to order at the bar, finding a table, and typical pub hours helps visitors understand a key part of local life."}
+        ],
+        "Transport": [
+            {"title": "Explain contactless transit", "body": "Useful notes for London often include airport transfer options, contactless payment habits, late-night transport, and common mistakes first-time visitors make."},
+            {"title": "Navigating the Tube", "body": "Tips on standing on the right on escalators, avoiding rush hour if possible, and reading station signage are highly practical."}
+        ],
+        "Places": [
+            {"title": "Highlight free museums", "body": "Reminding visitors about free entry to major permanent collections and how to manage the crowds there is very useful."},
+            {"title": "Suggest quieter parks", "body": "Beyond the royal parks, mentioning smaller green spaces, canals, or neighborhood walks provides a great alternative for downtime."}
+        ],
+        "Warning": [
+            {"title": "Look right, look left", "body": "A simple reminder for pedestrians to check traffic directions properly when crossing streets is a classic and necessary caution."},
+            {"title": "Awareness in crowded areas", "body": "Notes on keeping belongings secure in busy markets or major transport hubs help visitors stay safe."}
+        ],
+        "Other": [
+            {"title": "Discuss tipping habits", "body": "Clarifying the standard practice for service charges on restaurant bills versus tipping in pubs is a very common question."},
+            {"title": "Navigating the weather", "body": "Practical notes on dressing in layers and carrying an umbrella are always relevant for this city."}
+        ]
+    },
+    "paris": {
+        "Food": [
+            {"title": "Navigating cafe culture", "body": "Useful notes explain the difference between sitting at a table versus the bar, and how to politely ask for the bill."},
+            {"title": "Suggest bakeries and markets", "body": "Tips on finding a good local boulangerie, understanding market days, or picking up simple picnic supplies are highly appreciated."}
+        ],
+        "Transport": [
+            {"title": "Explain the Metro tickets", "body": "Clarifying the shift from paper tickets to reusable cards or phone payments, and reminding visitors to keep their ticket until they exit, is crucial."},
+            {"title": "Airport and regional trains", "body": "Notes on navigating the RER for airport transfers or day trips, and understanding the zone system, help avoid confusion."}
+        ],
+        "Places": [
+            {"title": "Explore specific arrondissements", "body": "Suggesting neighborhoods that offer a more relaxed vibe than the immediate areas around the major towers and museums is a great tip."},
+            {"title": "Practical museum notes", "body": "Advice on booking times, smaller alternative museums, or the best times to visit popular spots can save visitors hours of waiting."}
+        ],
+        "Warning": [
+            {"title": "Recognize street petitions", "body": "Cautions about individuals aggressively asking for signatures or donations near major monuments are very useful."},
+            {"title": "Transit awareness", "body": "Reminding travelers to secure their bags on busy Metro lines, especially those serving major stations and tourist sites, is standard advice."}
+        ],
+        "Other": [
+            {"title": "Basic greetings matter", "body": "A note explaining the importance of saying 'Bonjour' when entering a shop or interacting with staff is a key cultural insight."},
+            {"title": "Dining hours", "body": "Clarifying typical times for lunch and dinner service helps visitors avoid finding kitchens closed in the late afternoon."}
+        ]
+    },
+    "barcelona": {
+        "Food": [
+            {"title": "Explain tapas and pintxos", "body": "Notes on how to order, whether you pay by the toothpick, and the difference between sitting at the bar or a table are very helpful."},
+            {"title": "Highlight local markets", "body": "Suggesting when to visit markets for a calmer experience or highlighting lesser-known neighborhood markets adds great value."}
+        ],
+        "Transport": [
+            {"title": "Navigate the metro and buses", "body": "Useful notes cover multi-trip ticket options, connecting between different transit modes, and airport bus practicalities."},
+            {"title": "Walking and cycling", "body": "Tips on navigating the grid layout, using bike lanes safely, and areas best explored on foot are highly practical."}
+        ],
+        "Places": [
+            {"title": "Beyond the main avenues", "body": "Suggesting neighborhoods with a strong local character or quieter squares away from the central pedestrian streets is a great tip."},
+            {"title": "Managing attraction bookings", "body": "Reminding visitors that major architectural sights require advance booking helps them avoid disappointment."}
+        ],
+        "Warning": [
+            {"title": "Stay aware on transit", "body": "Practical cautions about keeping belongings secure, especially on the metro lines connecting to the beach or airport, are essential."},
+            {"title": "Street awareness", "body": "Notes on remaining attentive in crowded alleys or when watching street performers help prevent opportunistic theft."}
+        ],
+        "Other": [
+            {"title": "Understand the daily schedule", "body": "Explaining the timing of the late afternoon break and the typically late dinner hours helps visitors adjust their rhythm."},
+            {"title": "Language context", "body": "A brief note acknowledging the local use of Catalan alongside Spanish is a respectful and informative detail."}
+        ]
+    },
+    "madrid": {
+        "Food": [
+            {"title": "Navigating tapas culture", "body": "Notes on the tradition of receiving a small bite with a drink, and the difference between a ración and a tapa, are very useful."},
+            {"title": "Suggest local markets", "body": "Highlighting markets where visitors can eat comfortably, or areas known for traditional taverns, adds great value."}
+        ],
+        "Transport": [
+            {"title": "Using the Metro", "body": "Clarifying the reloadable card system, navigating large transfer stations, and airport connections are highly practical tips."},
+            {"title": "Walking the center", "body": "Notes on how walkable the central neighborhoods are, and when it might be better to take a bus or train, help visitors plan."}
+        ],
+        "Places": [
+            {"title": "Explore neighborhood squares", "body": "Suggesting specific plazas that have a great local atmosphere for an evening drink or walk is a wonderful tip."},
+            {"title": "Museum practicalities", "body": "Information about free entry hours for the major art museums and how to manage the queues is always appreciated."}
+        ],
+        "Warning": [
+            {"title": "Awareness in central plazas", "body": "Cautions about overly friendly individuals or distraction techniques in the busiest tourist squares are standard and helpful."},
+            {"title": "Transit vigilance", "body": "A gentle reminder to secure belongings on crowded metro lines or near major transit hubs is always a good idea."}
+        ],
+        "Other": [
+            {"title": "Embrace the late hours", "body": "Explaining that dinner and nightlife start significantly later than in many other countries helps visitors pace themselves."},
+            {"title": "Summer heat strategies", "body": "Notes on navigating the city during the hottest hours of the day, such as utilizing parks or taking a midday break, are crucial."}
+        ]
+    },
+    "berlin": {
+        "Food": [
+            {"title": "Highlight street food", "body": "Notes on the diverse and affordable street food scene, including kebabs and currywurst, are essential for this city."},
+            {"title": "Suggest neighborhood cafes", "body": "Pointing out areas known for their cafe culture, bakeries, and relaxed brunch spots helps visitors find everyday meals."}
+        ],
+        "Transport": [
+            {"title": "Understand the U-Bahn and S-Bahn", "body": "Clarifying the difference between the systems, ticket validation rules, and the zone system is highly practical."},
+            {"title": "Cycling culture", "body": "Notes on using bike-sharing apps, respecting dedicated bike lanes, and signaling properly are great for active visitors."}
+        ],
+        "Places": [
+            {"title": "Explore the diverse districts", "body": "Suggesting neighborhoods that offer different historical or cultural vibes beyond the central monuments is a great tip."},
+            {"title": "Enjoy the green spaces", "body": "Highlighting the importance of public parks, especially on weekends or summer evenings, adds a nice local touch."}
+        ],
+        "Warning": [
+            {"title": "Ticket validation", "body": "A strong reminder to always validate paper tickets before boarding transit, as plainclothes inspectors are common, is very necessary."},
+            {"title": "Bike lane awareness", "body": "Cautions for pedestrians to avoid walking in clearly marked bicycle lanes help prevent accidents and frustration."}
+        ],
+        "Other": [
+            {"title": "Cash is still important", "body": "Reminding visitors that many smaller bars, cafes, and kiosks might still only accept cash is a crucial practical note."},
+            {"title": "Recycling system", "body": "A brief explanation of the bottle deposit (Pfand) system helps visitors understand a key everyday practice."}
+        ]
+    },
+    "amsterdam": {
+        "Food": [
+            {"title": "Find everyday meals", "body": "Notes on local markets, simple cafes for lunch, and traditional snacks like herring or stroopwafels are very useful."},
+            {"title": "Dinner reservations", "body": "Reminding visitors that popular dinner spots often require booking ahead, and dining times are relatively early, is helpful."}
+        ],
+        "Transport": [
+            {"title": "Navigate trams and transit", "body": "Explaining the check-in and check-out process with transit cards or contactless payment on trams and buses is essential."},
+            {"title": "Airport connections", "body": "Notes on the straightforward train connection from Schiphol and how to find the right platforms are highly practical."}
+        ],
+        "Places": [
+            {"title": "Explore beyond the center", "body": "Suggesting neighborhoods or parks slightly outside the main canal ring helps visitors escape the thickest crowds."},
+            {"title": "Museum booking", "body": "Reminding travelers that major museums require advance, time-slotted tickets is a crucial planning tip."}
+        ],
+        "Warning": [
+            {"title": "Help visitors read the street rhythm", "body": "Useful cautions for Amsterdam can mention bikes, crowded central streets, tourist-heavy shops, and the need to pay attention to local movement patterns without making alarmist claims."},
+            {"title": "Bike lane safety", "body": "A very strong reminder for pedestrians to look both ways and never stop standing in the reddish-colored bike lanes is essential."}
+        ],
+        "Other": [
+            {"title": "Card payments", "body": "Notes explaining that while cards are widely accepted, some places might only take specific types of debit cards, are useful."},
+            {"title": "Weather adaptability", "body": "Practical advice on dressing in layers and being prepared for sudden rain showers helps visitors stay comfortable."}
+        ]
+    },
+    "lisbon": {
+        "Food": [
+            {"title": "Navigating traditional spots", "body": "Notes on finding simple tascas for an affordable lunch, and how the unordered starters (couvert) on the table are billed, are very helpful."},
+            {"title": "Enjoy the cafe culture", "body": "Suggesting a quick coffee and a pastry at a standing counter is a great way to experience everyday local rhythm."}
+        ],
+        "Transport": [
+            {"title": "Using trams and transit", "body": "Clarifying the reloadable transit card system, and noting that historic trams can be very crowded, are practical tips."},
+            {"title": "Managing the hills", "body": "Notes on using public elevators, funiculars, or simply wearing very comfortable shoes with good grip on the cobblestones are essential."}
+        ],
+        "Places": [
+            {"title": "Discover viewpoints", "body": "Highlighting the various miradouros (viewpoints) scattered across the hills as great places for a sunset break is a classic tip."},
+            {"title": "Explore different neighborhoods", "body": "Suggesting a walk through contrasting areas, from narrow historic alleys to wider riverfront districts, adds great value."}
+        ],
+        "Warning": [
+            {"title": "Cobblestone cautions", "body": "A strong reminder that the traditional patterned pavements can become surprisingly slippery, especially when wet, is very necessary."},
+            {"title": "Awareness on transit", "body": "Cautions about keeping belongings secure on the most popular and crowded historic tram routes are standard and helpful."}
+        ],
+        "Other": [
+            {"title": "Dining hours", "body": "Explaining that lunch and dinner start later than in northern Europe helps visitors plan their day."},
+            {"title": "Language notes", "body": "A brief reminder that a basic 'Obrigado/a' goes a long way, and that Spanish is not the local language, is a respectful tip."}
+        ]
+    },
+    "prague": {
+        "Food": [
+            {"title": "Find traditional pubs", "body": "Notes on finding hearty local food and affordable beer slightly away from the main tourist squares are highly valuable."},
+            {"title": "Suggest everyday bakeries", "body": "Highlighting local bakeries for a quick, inexpensive breakfast or snack helps visitors navigate daily meals."}
+        ],
+        "Transport": [
+            {"title": "Navigate the tram system", "body": "Explaining ticket validation, the reliability of the tram network, and the usefulness of 24-hour passes are great tips."},
+            {"title": "Airport connections", "body": "Notes on the straightforward bus-to-metro transfer from the airport offer a practical alternative to taxis."}
+        ],
+        "Places": [
+            {"title": "Beyond the main bridge", "body": "Suggesting neighborhoods, parks, or alternative viewpoints that offer a quieter experience than the most famous landmarks is a great tip."},
+            {"title": "Explore the riverfront", "body": "Highlighting areas along the river or specific islands that locals use for recreation adds a nice touch."}
+        ],
+        "Warning": [
+            {"title": "Exchange office caution", "body": "Warnings to check the actual rate and commission fees carefully before exchanging money in central tourist areas are essential."},
+            {"title": "Ticket validation", "body": "A strong reminder to always validate transit tickets before boarding, as inspections are strict, is very necessary."}
+        ],
+        "Other": [
+            {"title": "Tipping practices", "body": "Clarifying standard tipping expectations in restaurants and pubs helps visitors feel more confident."},
+            {"title": "Walking the center", "body": "Notes on wearing sensible shoes for the extensive cobblestone streets in the historic center are practical and helpful."}
+        ]
+    },
+    "vienna": {
+        "Food": [
+            {"title": "Enjoy the coffeehouse culture", "body": "Notes explaining that it's normal to linger for hours over a single coffee and a glass of water are essential for this city."},
+            {"title": "Find everyday meals", "body": "Suggesting street food stands (Würstelstand) or local markets for a quick, affordable bite adds great value."}
+        ],
+        "Transport": [
+            {"title": "Use the public transit", "body": "Explaining the honor system for transit, the necessity of validating tickets, and the efficiency of the U-Bahn are highly practical tips."},
+            {"title": "Airport connections", "body": "Comparing the dedicated airport train with the standard S-Bahn options helps visitors make informed, cost-effective choices."}
+        ],
+        "Places": [
+            {"title": "Explore the districts", "body": "Suggesting neighborhoods outside the inner ring road that offer great architecture and a more local vibe is a great tip."},
+            {"title": "Enjoy the green spaces", "body": "Highlighting the vast parks, riverfront areas, or nearby hills shows visitors a different side of the city."}
+        ],
+        "Warning": [
+            {"title": "Ticket validation", "body": "A strong reminder that despite the lack of barriers, plainclothes inspectors regularly check tickets on transit, is very necessary."},
+            {"title": "Bike lane awareness", "body": "Cautions for pedestrians to stay out of dedicated cycle paths help prevent accidents and frustration."}
+        ],
+        "Other": [
+            {"title": "Sunday closures", "body": "Reminding visitors that most shops and supermarkets are strictly closed on Sundays helps them plan their weekend purchases."},
+            {"title": "Tap water", "body": "A note highlighting that the local tap water is excellent and perfectly safe to drink is a simple but appreciated tip."}
+        ]
+    },
+    "new york": {
+        "Food": [
+            {"title": "Navigate the diverse food scene", "body": "Notes on finding affordable slices of pizza, bagels, or street carts, alongside navigating reservations for popular spots, are highly valuable."},
+            {"title": "Understand the tipping culture", "body": "Clarifying the strong expectation for tipping a specific percentage at sit-down restaurants and bars is an essential practical note."}
+        ],
+        "Transport": [
+            {"title": "Master the subway", "body": "Explaining contactless payment at the turnstiles, the difference between local and express trains, and reading the directional signage are great tips."},
+            {"title": "Airport connections", "body": "Notes comparing the practicalities of AirTrains, subways, buses, or taxis from the various regional airports help visitors plan."}
+        ],
+        "Places": [
+            {"title": "Explore the boroughs", "body": "Suggesting that visitors spend time in neighborhoods outside the main central hubs to experience the real rhythm of the city is a classic tip."},
+            {"title": "Find quiet moments", "body": "Highlighting smaller parks, waterfront walkways, or less crowded museums provides a helpful contrast to the busy streets."}
+        ],
+        "Warning": [
+            {"title": "Street awareness", "body": "Cautions about walking decisively, not blocking the sidewalk to look at maps, and being mindful in highly crowded tourist areas are standard and helpful."},
+            {"title": "Empty subway cars", "body": "A gentle reminder that if a subway car is completely empty during rush hour, there is usually a reason to choose a different one."}
+        ],
+        "Other": [
+            {"title": "Pacing yourself", "body": "Notes on the sheer scale of the city and the importance of wearing very comfortable walking shoes are highly practical."},
+            {"title": "Navigating the grid", "body": "A brief explanation of how the avenue and street numbering system works helps visitors orient themselves quickly."}
+        ]
+    },
+    "tokyo": {
+        "Food": [
+            {"title": "Navigate everyday eating", "body": "Notes on the high quality of convenience store food, ordering from ticket machines at noodle shops, and finding quiet cafes are very useful."},
+            {"title": "Understand dining etiquette", "body": "Clarifying that tipping is not practiced, and noting standard behaviors like using provided wet towels, adds great cultural context."}
+        ],
+        "Transport": [
+            {"title": "Help with station complexity", "body": "Useful transport notes for Tokyo often explain how to think about large stations, transfers, exits, IC cards, luggage, and the difference between local and faster services without relying on exact timetables."},
+            {"title": "Airport transfers matter", "body": "Good notes can compare the practical feel of different airport transfer options, especially for first-time visitors carrying luggage or arriving after a long flight."}
+        ],
+        "Places": [
+            {"title": "Discover quiet neighborhoods", "body": "Suggesting areas that offer a stark contrast to the neon-lit hubs, featuring small shrines and narrow residential streets, is a great tip."},
+            {"title": "Enjoy public parks", "body": "Highlighting larger parks for a midday break, or mentioning specific gardens that offer a serene environment, adds a nice touch."}
+        ],
+        "Warning": [
+            {"title": "Street smoking rules", "body": "A strong reminder that smoking on the street is often prohibited except in designated areas is a crucial compliance note."},
+            {"title": "Rush hour transit", "body": "Cautions about the intensity of morning and evening rush hours on the trains, and suggesting avoiding them with luggage, are highly practical."}
+        ],
+        "Other": [
+            {"title": "Cash and cards", "body": "Notes explaining that while card acceptance is growing, carrying some cash is still important for smaller shops and some transit features."},
+            {"title": "Trash disposal", "body": "A brief explanation about the lack of public trash cans and the expectation to carry rubbish home or to a convenience store is an essential tip."}
+        ]
+    }
+}
+
+def generate_tips():
+    output = {
+        "version": 1,
+        "fallback": FALLBACK_TIPS,
+        "cities": {}
+    }
+
+    for city_key, metadata in CITIES_META.items():
+        city_display = metadata["displayName"]
+        country_name = get_country_name(metadata.get("country_code"), metadata["country"])
+
+        city_data = {
+            "displayName": city_display,
+            "country": country_name,
+            "aliases": metadata["aliases"],
+            "categories": {}
+        }
+
+        content = CITY_CONTENT.get(city_key, FALLBACK_TIPS)
+
+        for category in ["Food", "Transport", "Places", "Warning", "Other"]:
+            # Ensure we get exactly the category lists
+            city_data["categories"][category] = content.get(category, FALLBACK_TIPS[category])
+
+        output["cities"][city_key] = city_data
+
+    return output
+
+if __name__ == "__main__":
+    tips = generate_tips()
+
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets')
+    os.makedirs(output_dir, exist_ok=True)
+
+    output_path = os.path.join(output_dir, 'starter_tips.json')
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(tips, f, indent=2, ensure_ascii=False)
+
+    print(f"Generated {output_path} successfully.")
