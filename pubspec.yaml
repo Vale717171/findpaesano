@@ -1,7 +1,7 @@
 name: flagpost
-description: "Find compatriots nearby, share local tips and info."
+description: "City-based local boards for travelers, expats, and compatriots."
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.0+3
 
 environment:
   sdk: ^3.11.3

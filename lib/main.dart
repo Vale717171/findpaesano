@@ -12,7 +12,6 @@ import 'settings_screen.dart';
 import 'board_screen.dart';
 import 'radar_screen.dart';
 import 'chat_screen.dart';
-import 'ad_banner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -122,18 +121,17 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  Widget? _radarScreen;
 
-  // IndexedStack mantiene tutti gli schermi in memoria:
-  // - lo stato non si perde quando cambi tab
-  // - RadarScreen non ri-richiede il GPS ogni volta
-  final List<Widget> _screens = [
-    const RadarScreen(),
-    const BoardScreen(),
-    const ChatScreen(),
-  ];
+  // 0 = Board, 1 = Nearby (Radar), 2 = Chat
+  // Initialize RadarScreen lazily to avoid requesting GPS at startup.
 
   @override
   Widget build(BuildContext context) {
+    if (_selectedIndex == 1 && _radarScreen == null) {
+      _radarScreen = const RadarScreen();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -158,12 +156,15 @@ class _MainScreenState extends State<MainScreen> {
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: _screens,
+        children: [
+          const BoardScreen(),
+          _radarScreen ?? const SizedBox.shrink(),
+          const ChatScreen(),
+        ],
       ),
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const AdBanner(),
           // Badge: conta i segnali in arrivo e lo mostra sull'icona Chat
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseAuth.instance.currentUser != null
@@ -185,12 +186,12 @@ class _MainScreenState extends State<MainScreen> {
                 },
                 destinations: [
                   const NavigationDestination(
-                    icon: Icon(Icons.radar),
-                    label: 'Radar',
+                    icon: Icon(Icons.forum),
+                    label: 'Boards',
                   ),
                   const NavigationDestination(
-                    icon: Icon(Icons.forum),
-                    label: 'Board',
+                    icon: Icon(Icons.radar),
+                    label: 'Nearby',
                   ),
                   NavigationDestination(
                     icon: pendingCount > 0

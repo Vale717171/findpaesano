@@ -9,6 +9,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'ad_banner.dart';
 
 enum FilterMode { compatriots, all }
 
@@ -534,7 +535,7 @@ class _RadarScreenState extends State<RadarScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Radar'),
+        title: const Text('Nearby'),
         actions: [
           PopupMenuButton<double>(
             icon: const Icon(Icons.tune),
@@ -549,7 +550,11 @@ class _RadarScreenState extends State<RadarScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
+      body: Column(
+        children: [
+          const AdBanner(),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
             .where('location', isNotEqualTo: null)
@@ -904,6 +909,9 @@ class _RadarScreenState extends State<RadarScreen> {
             ],
           );
         },
+      ),
+          ),
+        ],
       ),
 
       // FAB: torna alla propria posizione (cancella anche la ricerca)
