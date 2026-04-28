@@ -128,10 +128,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedIndex == 1 && _radarScreen == null) {
-      _radarScreen = const RadarScreen();
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -182,6 +178,9 @@ class _MainScreenState extends State<MainScreen> {
               return NavigationBar(
                 selectedIndex: _selectedIndex,
                 onDestinationSelected: (index) {
+                  if (index == 1) {
+                    _radarScreen ??= const RadarScreen();
+                  }
                   setState(() => _selectedIndex = index);
                 },
                 destinations: [

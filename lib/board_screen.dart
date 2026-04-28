@@ -357,11 +357,13 @@ class _CategoryScreenState extends State<CategoryScreen>
           _MessageList(
             category: widget.category['label'] as String,
             locationKey: widget.locationKey,
+            locationDisplay: widget.locationDisplay,
             isArchive: false,
           ),
           _MessageList(
             category: widget.category['label'] as String,
             locationKey: widget.locationKey,
+            locationDisplay: widget.locationDisplay,
             isArchive: true,
           ),
         ],
@@ -395,11 +397,13 @@ class _CategoryScreenState extends State<CategoryScreen>
 class _MessageList extends StatefulWidget {
   final String category;
   final String locationKey;
+  final String locationDisplay;
   final bool isArchive;
 
   const _MessageList({
     required this.category,
     required this.locationKey,
+    required this.locationDisplay,
     required this.isArchive,
   });
 
@@ -583,7 +587,7 @@ class _MessageListState extends State<_MessageList> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Be the first to leave a useful note for others.',
+              'Be the first to leave a useful note for ${widget.locationDisplay}.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[600]),
             ),
