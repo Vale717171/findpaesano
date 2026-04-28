@@ -1,17 +1,14 @@
-# nearling
+# FlagPost
 
-A new Flutter project.
+FlagPost is a beta Android application focused on city-based local boards.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- **City Boards First**: Choose a city and read or leave practical tips, warnings, and notes from travelers and locals.
+- **Optional Nearby & Chat**: You can use the Radar/Nearby feature if you wish to see people around you. This is completely optional and your exact location is never shared with other users.
+- **Starter Prompts**: No fake users or fake messages. Empty boards come with intelligent editorial prompts to inspire the first useful notes.
+- **Privacy First**: The app does not ask for GPS permissions during onboarding. You only share your location if you explicitly decide to use the Nearby feature.
 
-A few resources to get you started if this is your first Flutter project:
+## Project Status
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+This project is currently in beta and undergoing a pivot to focus primarily on local boards for travelers, expats, and compatriots.

@@ -60,7 +60,7 @@ class _BoardScreenState extends State<BoardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Board')),
+      appBar: AppBar(title: const Text('Boards')),
       body: _boardLocation == null ? _buildLocationPicker() : _buildBoard(),
     );
   }
@@ -76,13 +76,13 @@ class _BoardScreenState extends State<BoardScreen> {
           const Icon(Icons.forum, size: 64, color: Color(0xFF2196F3)),
           const SizedBox(height: 24),
           const Text(
-            'Which location\ndo you want to explore?',
+            'Pick a city',
             style: TextStyle(
                 fontSize: 26, fontWeight: FontWeight.bold, height: 1.3),
           ),
           const SizedBox(height: 8),
           Text(
-            'Discover tips, warnings and local info\nfrom travelers who have been there.',
+            'Read local tips, warnings and practical notes from travelers and people who know the place.',
             style: TextStyle(
                 fontSize: 15, color: Colors.grey[600], height: 1.4),
           ),
@@ -357,11 +357,13 @@ class _CategoryScreenState extends State<CategoryScreen>
           _MessageList(
             category: widget.category['label'] as String,
             locationKey: widget.locationKey,
+            locationDisplay: widget.locationDisplay,
             isArchive: false,
           ),
           _MessageList(
             category: widget.category['label'] as String,
             locationKey: widget.locationKey,
+            locationDisplay: widget.locationDisplay,
             isArchive: true,
           ),
         ],
@@ -395,11 +397,13 @@ class _CategoryScreenState extends State<CategoryScreen>
 class _MessageList extends StatefulWidget {
   final String category;
   final String locationKey;
+  final String locationDisplay;
   final bool isArchive;
 
   const _MessageList({
     required this.category,
     required this.locationKey,
+    required this.locationDisplay,
     required this.isArchive,
   });
 
@@ -512,22 +516,83 @@ class _MessageListState extends State<_MessageList> {
   }
 
   Widget _emptyState() {
+    if (widget.isArchive) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inbox, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              'No archived messages',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    String promptIdeas = '';
+    switch (widget.category.toLowerCase()) {
+      case 'food':
+        promptIdeas = '• cheap meals\n• local dishes\n• places to avoid';
+        break;
+      case 'transport':
+        promptIdeas = '• tickets & zones\n• airport transfer\n• common mistakes';
+        break;
+      case 'places':
+        promptIdeas = '• underrated places\n• quiet areas\n• viewpoints';
+        break;
+      case 'warning':
+        promptIdeas = '• scams & tourist traps\n• unsafe areas\n• practical cautions';
+        break;
+      default:
+        promptIdeas = '• anything useful that does not fit elsewhere';
+    }
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.forum_outlined,
-              size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text(
-            widget.isArchive
-                ? 'No archived messages'
-                : 'No messages yet\nBe the first to post!',
-            textAlign: TextAlign.center,
-            style:
-                TextStyle(color: Colors.grey[400], fontSize: 16),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.forum_outlined, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            const Text(
+              'No tips here yet.',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Starter prompts',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Useful things to post:\n$promptIdeas',
+                    style: TextStyle(color: Colors.grey[700], height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Be the first to leave a useful note for ${widget.locationDisplay}.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ],
+        ),
       ),
     );
   }

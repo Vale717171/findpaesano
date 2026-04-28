@@ -401,10 +401,53 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'What\'s your situation?',
+            'What do you want to do first?',
             style: TextStyle(fontSize: 18, color: Colors.grey),
           ),
           const SizedBox(height: 32),
+          GestureDetector(
+            onTap: () => setState(() => _travelStatus = 'planning'),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _travelStatus == 'planning'
+                    ? const Color(0xFF2196F3)
+                    : Colors.grey[100],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _travelStatus == 'planning'
+                      ? const Color(0xFF2196F3)
+                      : Colors.grey[300]!,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '🔍 Explore a city',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _travelStatus == 'planning'
+                          ? Colors.white
+                          : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Choose a destination and browse local tips, warnings and practical notes.',
+                    style: TextStyle(
+                      color: _travelStatus == 'planning'
+                          ? Colors.white70
+                          : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           GestureDetector(
             onTap: () => setState(() {
               _travelStatus = 'here';
@@ -428,7 +471,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '✈️ I\'m already there!',
+                    '📍 Use Nearby later',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -439,52 +482,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Use my current location',
+                    'You can enable location only if you decide to look for people nearby.',
                     style: TextStyle(
                       color: _travelStatus == 'here'
-                          ? Colors.white70
-                          : Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () => setState(() => _travelStatus = 'planning'),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: _travelStatus == 'planning'
-                    ? const Color(0xFF2196F3)
-                    : Colors.grey[100],
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _travelStatus == 'planning'
-                      ? const Color(0xFF2196F3)
-                      : Colors.grey[300]!,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '🔍 Planning my trip',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: _travelStatus == 'planning'
-                          ? Colors.white
-                          : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'I want info about a destination',
-                    style: TextStyle(
-                      color: _travelStatus == 'planning'
                           ? Colors.white70
                           : Colors.grey,
                     ),
