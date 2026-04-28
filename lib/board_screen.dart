@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'starter_content.dart';
 
 const List<Map<String, dynamic>> kCategories = [
   {'label': 'Food', 'icon': Icons.restaurant, 'color': Color(0xFFFF9800)},
   {'label': 'Places', 'icon': Icons.place, 'color': Color(0xFF4CAF50)},
-  {'label': 'Transport', 'icon': Icons.directions_bus, 'color': Color(0xFF2196F3)},
+  {
+    'label': 'Transport',
+    'icon': Icons.directions_bus,
+    'color': Color(0xFF2196F3),
+  },
   {'label': 'Warning', 'icon': Icons.warning, 'color': Color(0xFFF44336)},
   {'label': 'Other', 'icon': Icons.more_horiz, 'color': Color(0xFF9E9E9E)},
 ];
@@ -22,7 +27,7 @@ class BoardScreen extends StatefulWidget {
 }
 
 class _BoardScreenState extends State<BoardScreen> {
-  String? _boardLocation;    // nome visualizzato, es. "Rome"
+  String? _boardLocation; // nome visualizzato, es. "Rome"
   String? _boardLocationKey; // chiave Firestore (lowercase), es. "rome"
   final _locationController = TextEditingController();
 
@@ -35,9 +40,11 @@ class _BoardScreenState extends State<BoardScreen> {
   // Converte in Title Case: "new york" → "New York"
   String _toTitleCase(String s) => s
       .split(' ')
-      .map((w) => w.isEmpty
-          ? ''
-          : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+      .map(
+        (w) => w.isEmpty
+            ? ''
+            : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}',
+      )
       .join(' ');
 
   void _applyLocation() {
@@ -78,13 +85,19 @@ class _BoardScreenState extends State<BoardScreen> {
           const Text(
             'Pick a city',
             style: TextStyle(
-                fontSize: 26, fontWeight: FontWeight.bold, height: 1.3),
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              height: 1.3,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Read local tips, warnings and practical notes from travelers and people who know the place.',
             style: TextStyle(
-                fontSize: 15, color: Colors.grey[600], height: 1.4),
+              fontSize: 15,
+              color: Colors.grey[600],
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 32),
           TextField(
@@ -97,11 +110,14 @@ class _BoardScreenState extends State<BoardScreen> {
               hintText: 'e.g. Tokyo, Rome, Barcelona...',
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: Color(0xFF2196F3), width: 2),
+                borderSide: const BorderSide(
+                  color: Color(0xFF2196F3),
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -117,7 +133,8 @@ class _BoardScreenState extends State<BoardScreen> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text('Browse', style: TextStyle(fontSize: 16)),
             ),
@@ -132,7 +149,10 @@ class _BoardScreenState extends State<BoardScreen> {
                 child: Text(
                   'See something inappropriate? Tap ··· on any message to report it. Messages reported by multiple users are hidden automatically.',
                   style: TextStyle(
-                      fontSize: 12, color: Colors.grey[500], height: 1.4),
+                    fontSize: 12,
+                    color: Colors.grey[500],
+                    height: 1.4,
+                  ),
                 ),
               ),
             ],
@@ -149,20 +169,19 @@ class _BoardScreenState extends State<BoardScreen> {
         // Barra con la città selezionata e pulsante "Change"
         Container(
           width: double.infinity,
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           color: const Color(0xFF2196F3).withValues(alpha: 0.08),
           child: Row(
             children: [
-              const Icon(Icons.location_on,
-                  color: Color(0xFF2196F3), size: 18),
+              const Icon(Icons.location_on, color: Color(0xFF2196F3), size: 18),
               const SizedBox(width: 6),
               Text(
                 _boardLocation!,
                 style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2196F3),
-                    fontSize: 15),
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2196F3),
+                  fontSize: 15,
+                ),
               ),
               const Spacer(),
               TextButton(
@@ -209,11 +228,12 @@ class _CategoryCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 12,
+        ),
         leading: CircleAvatar(
-          backgroundColor:
-              (category['color'] as Color).withValues(alpha: 0.15),
+          backgroundColor: (category['color'] as Color).withValues(alpha: 0.15),
           child: Icon(
             category['icon'] as IconData,
             color: category['color'] as Color,
@@ -221,8 +241,7 @@ class _CategoryCard extends StatelessWidget {
         ),
         title: Text(
           category['label'] as String,
-          style:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         subtitle: _MessageCount(
           category: category['label'] as String,
@@ -251,23 +270,18 @@ class _MessageCount extends StatelessWidget {
   final String category;
   final String locationKey;
 
-  const _MessageCount({
-    required this.category,
-    required this.locationKey,
-  });
+  const _MessageCount({required this.category, required this.locationKey});
 
   @override
   Widget build(BuildContext context) {
-    final sevenDaysAgo =
-        DateTime.now().subtract(const Duration(days: 7));
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('messages')
           .where('locationKey', isEqualTo: locationKey)
           .where('category', isEqualTo: category)
-          .where('createdAt',
-              isGreaterThan: Timestamp.fromDate(sevenDaysAgo))
+          .where('createdAt', isGreaterThan: Timestamp.fromDate(sevenDaysAgo))
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Text('');
@@ -416,8 +430,7 @@ class _MessageListState extends State<_MessageList> {
 
   @override
   Widget build(BuildContext context) {
-    final sevenDaysAgo =
-        DateTime.now().subtract(const Duration(days: 7));
+    final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7));
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
     // Query filtrata per locationKey + category + finestra temporale.
@@ -426,22 +439,25 @@ class _MessageListState extends State<_MessageList> {
     // per creare l'indice automaticamente in Firebase Console.
     final query = widget.isArchive
         ? FirebaseFirestore.instance
-            .collection('messages')
-            .where('locationKey', isEqualTo: widget.locationKey)
-            .where('category', isEqualTo: widget.category)
-            .where('createdAt',
-                isLessThanOrEqualTo:
-                    Timestamp.fromDate(sevenDaysAgo))
-            .orderBy('createdAt', descending: true)
-            .limit(_limit)
+              .collection('messages')
+              .where('locationKey', isEqualTo: widget.locationKey)
+              .where('category', isEqualTo: widget.category)
+              .where(
+                'createdAt',
+                isLessThanOrEqualTo: Timestamp.fromDate(sevenDaysAgo),
+              )
+              .orderBy('createdAt', descending: true)
+              .limit(_limit)
         : FirebaseFirestore.instance
-            .collection('messages')
-            .where('locationKey', isEqualTo: widget.locationKey)
-            .where('category', isEqualTo: widget.category)
-            .where('createdAt',
-                isGreaterThan: Timestamp.fromDate(sevenDaysAgo))
-            .orderBy('createdAt', descending: true)
-            .limit(_limit);
+              .collection('messages')
+              .where('locationKey', isEqualTo: widget.locationKey)
+              .where('category', isEqualTo: widget.category)
+              .where(
+                'createdAt',
+                isGreaterThan: Timestamp.fromDate(sevenDaysAgo),
+              )
+              .orderBy('createdAt', descending: true)
+              .limit(_limit);
 
     return StreamBuilder<QuerySnapshot>(
       stream: query.snapshots(),
@@ -457,10 +473,10 @@ class _MessageListState extends State<_MessageList> {
         return StreamBuilder<QuerySnapshot>(
           stream: currentUid != null
               ? FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(currentUid)
-                  .collection('blockedUsers')
-                  .snapshots()
+                    .collection('users')
+                    .doc(currentUid)
+                    .collection('blockedUsers')
+                    .snapshots()
               : const Stream.empty(),
           builder: (context, blockedSnapshot) {
             final blockedIds = <String>{};
@@ -491,12 +507,10 @@ class _MessageListState extends State<_MessageList> {
               itemBuilder: (context, index) {
                 if (index == filteredDocs.length) {
                   return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Center(
                       child: TextButton.icon(
-                        onPressed: () =>
-                            setState(() => _limit += 50),
+                        onPressed: () => setState(() => _limit += 50),
                         icon: const Icon(Icons.expand_more),
                         label: const Text('Load more'),
                       ),
@@ -505,8 +519,7 @@ class _MessageListState extends State<_MessageList> {
                 }
                 final doc = filteredDocs[index];
                 final data = doc.data() as Map<String, dynamic>;
-                return _MessageCard(
-                    messageId: doc.id, data: data);
+                return _MessageCard(messageId: doc.id, data: data);
               },
             );
           },
@@ -533,19 +546,116 @@ class _MessageListState extends State<_MessageList> {
       );
     }
 
+    return FutureBuilder<List<StarterTip>>(
+      future: StarterContent.instance.tipsFor(
+        locationKey: widget.locationKey,
+        category: widget.category,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final tips = snapshot.data ?? [];
+
+        if (tips.isNotEmpty) {
+          return _buildStarterNotesPanel(tips);
+        }
+
+        return _buildGenericFallbackPrompt();
+      },
+    );
+  }
+
+  Widget _buildStarterNotesPanel(List<StarterTip> tips) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 16),
+          const Text(
+            'Official starter notes',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'These are editorial prompts from FlagPost, not user posts.',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+          const SizedBox(height: 24),
+          ...tips.map((tip) => _buildStarterTipCard(tip)),
+          const SizedBox(height: 32),
+          Center(
+            child: Text(
+              'Be the first to leave a useful note for ${widget.locationDisplay}.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStarterTipCard(StarterTip tip) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2196F3).withValues(alpha: 0.05),
+        border: Border.all(
+          color: const Color(0xFF2196F3).withValues(alpha: 0.2),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.lightbulb_outline,
+                size: 20,
+                color: Color(0xFF2196F3),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  tip.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Color(0xFF2196F3),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(tip.body, style: const TextStyle(fontSize: 15, height: 1.4)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGenericFallbackPrompt() {
     String promptIdeas = '';
     switch (widget.category.toLowerCase()) {
       case 'food':
         promptIdeas = '• cheap meals\n• local dishes\n• places to avoid';
         break;
       case 'transport':
-        promptIdeas = '• tickets & zones\n• airport transfer\n• common mistakes';
+        promptIdeas =
+            '• tickets & zones\n• airport transfer\n• common mistakes';
         break;
       case 'places':
         promptIdeas = '• underrated places\n• quiet areas\n• viewpoints';
         break;
       case 'warning':
-        promptIdeas = '• scams & tourist traps\n• unsafe areas\n• practical cautions';
+        promptIdeas =
+            '• scams & tourist traps\n• unsafe areas\n• practical cautions';
         break;
       default:
         promptIdeas = '• anything useful that does not fit elsewhere';
@@ -631,14 +741,16 @@ class _MessageCard extends StatelessWidget {
               children: [
                 Text(
                   _timeAgo(data['createdAt'] as Timestamp?),
-                  style: TextStyle(
-                      color: Colors.grey[400], fontSize: 12),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
                 ),
                 const Spacer(),
                 if (isOwner)
                   PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert,
-                        size: 16, color: Colors.grey[400]),
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 16,
+                      color: Colors.grey[400],
+                    ),
                     onSelected: (value) {
                       if (value == 'delete') _deleteMessage(context);
                     },
@@ -647,11 +759,13 @@ class _MessageCard extends StatelessWidget {
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline,
-                                color: Colors.red, size: 20),
+                            Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                              size: 20,
+                            ),
                             SizedBox(width: 8),
-                            Text('Delete',
-                                style: TextStyle(color: Colors.red)),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
                           ],
                         ),
                       ),
@@ -659,8 +773,11 @@ class _MessageCard extends StatelessWidget {
                   )
                 else
                   PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert,
-                        size: 16, color: Colors.grey[400]),
+                    icon: Icon(
+                      Icons.more_vert,
+                      size: 16,
+                      color: Colors.grey[400],
+                    ),
                     onSelected: (value) {
                       if (value == 'report') _reportMessage(context);
                       if (value == 'block') _blockUser(context);
@@ -670,11 +787,13 @@ class _MessageCard extends StatelessWidget {
                         value: 'report',
                         child: Row(
                           children: [
-                            Icon(Icons.flag_outlined,
-                                color: Colors.red, size: 20),
+                            Icon(
+                              Icons.flag_outlined,
+                              color: Colors.red,
+                              size: 20,
+                            ),
                             SizedBox(width: 8),
-                            Text('Report',
-                                style: TextStyle(color: Colors.red)),
+                            Text('Report', style: TextStyle(color: Colors.red)),
                           ],
                         ),
                       ),
@@ -682,12 +801,12 @@ class _MessageCard extends StatelessWidget {
                         value: 'block',
                         child: Row(
                           children: [
-                            Icon(Icons.block,
-                                color: Colors.orange, size: 20),
+                            Icon(Icons.block, color: Colors.orange, size: 20),
                             SizedBox(width: 8),
-                            Text('Block user',
-                                style:
-                                    TextStyle(color: Colors.orange)),
+                            Text(
+                              'Block user',
+                              style: TextStyle(color: Colors.orange),
+                            ),
                           ],
                         ),
                       ),
@@ -696,13 +815,14 @@ class _MessageCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(data['text'] as String? ?? '',
-                style: const TextStyle(fontSize: 15)),
+            Text(
+              data['text'] as String? ?? '',
+              style: const TextStyle(fontSize: 15),
+            ),
             const SizedBox(height: 8),
             Text(
               '${data['authorFlag'] ?? ''} ${data['authorNickname'] ?? 'Anonymous'}',
-              style:
-                  TextStyle(color: Colors.grey[500], fontSize: 12),
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
             ),
           ],
         ),
@@ -715,8 +835,7 @@ class _MessageCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete message'),
-        content: const Text(
-            'Are you sure you want to delete this message?'),
+        content: const Text('Are you sure you want to delete this message?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -739,15 +858,15 @@ class _MessageCard extends StatelessWidget {
           .doc(messageId)
           .delete();
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Message deleted.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Message deleted.')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -758,7 +877,8 @@ class _MessageCard extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: const Text('Report message'),
         content: const Text(
-            'Are you sure you want to report this message as inappropriate?'),
+          'Are you sure you want to report this message as inappropriate?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -788,8 +908,7 @@ class _MessageCard extends StatelessWidget {
       if (existing.docs.isNotEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('You already reported this message.')),
+            const SnackBar(content: Text('You already reported this message.')),
           );
         }
         return;
@@ -797,14 +916,11 @@ class _MessageCard extends StatelessWidget {
 
       // Aggiunge la segnalazione e incrementa il contatore sul messaggio
       final batch = FirebaseFirestore.instance.batch();
-      batch.set(
-        FirebaseFirestore.instance.collection('reports').doc(),
-        {
-          'messageId': messageId,
-          'reportedBy': currentUid,
-          'createdAt': FieldValue.serverTimestamp(),
-        },
-      );
+      batch.set(FirebaseFirestore.instance.collection('reports').doc(), {
+        'messageId': messageId,
+        'reportedBy': currentUid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
       batch.update(
         FirebaseFirestore.instance.collection('messages').doc(messageId),
         {'reportCount': FieldValue.increment(1)},
@@ -813,15 +929,14 @@ class _MessageCard extends StatelessWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Message reported. Thank you!')),
+          const SnackBar(content: Text('Message reported. Thank you!')),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -841,8 +956,7 @@ class _MessageCard extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style:
-                TextButton.styleFrom(foregroundColor: Colors.orange),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange),
             child: const Text('Block'),
           ),
         ],
@@ -863,15 +977,15 @@ class _MessageCard extends StatelessWidget {
           .set({'blockedAt': FieldValue.serverTimestamp()});
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User blocked.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('User blocked.')));
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -918,9 +1032,11 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
 
   String _toTitleCase(String s) => s
       .split(' ')
-      .map((w) => w.isEmpty
-          ? ''
-          : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+      .map(
+        (w) => w.isEmpty
+            ? ''
+            : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}',
+      )
       .join(' ');
 
   bool get _canPost =>
@@ -960,9 +1076,9 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -982,9 +1098,10 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('New message',
-              style:
-                  TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Text(
+            'New message',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 16),
 
           // ── Località (primo campo, precompilato) ──
@@ -995,14 +1112,19 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
             decoration: InputDecoration(
               labelText: 'Location',
               hintText: 'e.g. Rome, Tokyo...',
-              prefixIcon: const Icon(Icons.location_on,
-                  color: Color(0xFF2196F3)),
+              prefixIcon: const Icon(
+                Icons.location_on,
+                color: Color(0xFF2196F3),
+              ),
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                    color: Color(0xFF2196F3), width: 2),
+                  color: Color(0xFF2196F3),
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -1017,11 +1139,14 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
             decoration: InputDecoration(
               hintText: 'Write your message...',
               border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(
-                    color: Color(0xFF2196F3), width: 2),
+                  color: Color(0xFF2196F3),
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -1036,13 +1161,12 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: _isLoading
-                  ? const CircularProgressIndicator(
-                      color: Colors.white)
-                  : const Text('Post',
-                      style: TextStyle(fontSize: 16)),
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Post', style: TextStyle(fontSize: 16)),
             ),
           ),
         ],
