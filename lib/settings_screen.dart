@@ -126,9 +126,16 @@ class SettingsScreen extends StatelessWidget {
             .get();
         allRefs.addAll(blockedUsers.docs.map((d) => d.reference));
 
-        for (int i = 0; i < allRefs.length; i += 400) {
+        // Keep these delete batches intentionally small. Some Firestore rules
+        // for chat message deletes call get() on the parent chat document, and
+        // large batched writes can hit the Security Rules access-call limit.
+        const cleanupBatchSize = 10;
+        for (int i = 0; i < allRefs.length; i += cleanupBatchSize) {
           final batch = FirebaseFirestore.instance.batch();
-          final chunk = allRefs.sublist(i, min(i + 400, allRefs.length));
+          final chunk = allRefs.sublist(
+            i,
+            min(i + cleanupBatchSize, allRefs.length),
+          );
           for (final ref in chunk) {
             batch.delete(ref);
           }

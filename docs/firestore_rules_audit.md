@@ -96,9 +96,12 @@ Reason: the current account-deletion flow in the Flutter client deletes shared c
 
 The rules contain explicit TODO comments for both cases.
 
+As a mitigation for rules access-call limits, the client-side account-deletion cleanup now uses small Firestore delete batches. This avoids large batched writes failing when chat-message delete rules perform `get()` checks on the parent chat document.
+
 ## Residual Risks
 
 - Chat and chat-message deletion is still broader than ideal because of the current account-deletion implementation.
+- Account deletion still depends on client-side cleanup; the smaller batch size reduces Security Rules access-call failures, but it does not remove the architectural coupling.
 - `messages.reportCount` is still incremented client-side. Rules now restrict the update shape, but they still cannot fully guarantee one real report per increment.
 - `reports` still use random top-level document IDs. That keeps compatibility with the client, but it prevents stronger uniqueness guarantees in rules alone.
 - `users` remains readable by any authenticated user because Nearby and chat-related flows depend on public profile data and fuzzy location.
