@@ -123,7 +123,7 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   Widget? _radarScreen;
 
-  // 0 = Board, 1 = Nearby (Radar), 2 = Chat
+  // 0 = Board, 1 = Nearby, 2 = Chat
   // Initialize RadarScreen lazily to avoid requesting GPS at startup.
 
   @override

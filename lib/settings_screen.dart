@@ -23,6 +23,14 @@ class SettingsScreen extends StatelessWidget {
     await prefs.setString('themeMode', key);
   }
 
+  Future<void> _signOut(BuildContext context) async {
+    await GoogleSignIn().signOut();
+    await FirebaseAuth.instance.signOut();
+
+    if (!context.mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   Future<void> _deleteAccount(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -378,10 +386,7 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),
-            onTap: () async {
-              await GoogleSignIn().signOut();
-              await FirebaseAuth.instance.signOut();
-            },
+            onTap: () => _signOut(context),
           ),
 
           const Divider(),
