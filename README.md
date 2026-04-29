@@ -12,3 +12,16 @@ FlagPost is a beta Android application focused on city-based local boards.
 ## Project Status
 
 This project is currently in beta and undergoing a pivot to focus primarily on local boards for travelers, expats, and compatriots.
+
+## Local Build Setup
+
+Some build files are intentionally kept local and excluded from git:
+
+- `lib/firebase_options.dart`
+- `android/app/google-services.json`
+- `ios/Runner/GoogleService-Info.plist`
+- `android/key.properties`
+
+Android debug builds do not require `android/key.properties`.
+
+Android release builds do require local signing values in `android/key.properties`. Use [docs/firebase_local_setup.md](docs/firebase_local_setup.md) and start from [android/key.properties.example](android/key.properties.example).
