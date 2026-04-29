@@ -15,6 +15,19 @@ const List<Map<String, dynamic>> kCategories = [
   {'label': 'Other', 'icon': Icons.more_horiz, 'color': Color(0xFF9E9E9E)},
 ];
 
+const List<Map<String, String>> kSuggestedCities = [
+  {'name': 'Rome', 'country': 'Italy'},
+  {'name': 'Milan', 'country': 'Italy'},
+  {'name': 'London', 'country': 'United Kingdom'},
+  {'name': 'Paris', 'country': 'France'},
+  {'name': 'Barcelona', 'country': 'Spain'},
+  {'name': 'Berlin', 'country': 'Germany'},
+  {'name': 'Lisbon', 'country': 'Portugal'},
+  {'name': 'Vienna', 'country': 'Austria'},
+  {'name': 'New York City', 'country': 'United States'},
+  {'name': 'Tokyo', 'country': 'Japan'},
+];
+
 // ── Board screen ────────────────────────────────────────────────────────────
 // L'utente deve prima scegliere una località prima di vedere i messaggi.
 // I messaggi sono sempre filtrati per località: niente caos globale.
@@ -56,6 +69,11 @@ class _BoardScreenState extends State<BoardScreen> {
     });
   }
 
+  void _selectSuggestedCity(String city) {
+    _locationController.text = city;
+    _applyLocation();
+  }
+
   void _resetLocation() {
     _locationController.clear();
     setState(() {
@@ -67,7 +85,7 @@ class _BoardScreenState extends State<BoardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Boards')),
+      appBar: AppBar(title: const Text('City boards')),
       body: _boardLocation == null ? _buildLocationPicker() : _buildBoard(),
     );
   }
@@ -80,7 +98,19 @@ class _BoardScreenState extends State<BoardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 32),
-          const Icon(Icons.forum, size: 64, color: Color(0xFF2196F3)),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2196F3).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.location_city,
+              size: 36,
+              color: Color(0xFF2196F3),
+            ),
+          ),
           const SizedBox(height: 24),
           const Text(
             'Pick a city',
@@ -92,7 +122,7 @@ class _BoardScreenState extends State<BoardScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Read local tips, warnings and practical notes from travelers and people who know the place.',
+            'Every board is organized by city, so tips, warnings and practical notes stay focused on the place you are visiting.',
             style: TextStyle(
               fontSize: 15,
               color: Colors.grey[600],
@@ -122,6 +152,34 @@ class _BoardScreenState extends State<BoardScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          const Text(
+            'Suggested cities',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: kSuggestedCities.map((city) {
+              final name = city['name']!;
+              final country = city['country']!;
+              return ActionChip(
+                avatar: const Icon(Icons.location_on_outlined, size: 18),
+                label: Text('$name · $country'),
+                onPressed: () => _selectSuggestedCity(name),
+                backgroundColor: const Color(
+                  0xFF2196F3,
+                ).withValues(alpha: 0.08),
+                side: BorderSide(
+                  color: const Color(0xFF2196F3).withValues(alpha: 0.18),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -173,17 +231,31 @@ class _BoardScreenState extends State<BoardScreen> {
           color: const Color(0xFF2196F3).withValues(alpha: 0.08),
           child: Row(
             children: [
-              const Icon(Icons.location_on, color: Color(0xFF2196F3), size: 18),
-              const SizedBox(width: 6),
-              Text(
-                _boardLocation!,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF2196F3),
-                  fontSize: 15,
+              const Icon(
+                Icons.location_city,
+                color: Color(0xFF2196F3),
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _boardLocation!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF2196F3),
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      'City board',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(),
               TextButton(
                 onPressed: _resetLocation,
                 child: const Text('Change'),
@@ -243,9 +315,15 @@ class _CategoryCard extends StatelessWidget {
           category['label'] as String,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        subtitle: _MessageCount(
-          category: category['label'] as String,
-          locationKey: locationKey,
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Tips for $locationDisplay'),
+            _MessageCount(
+              category: category['label'] as String,
+              locationKey: locationKey,
+            ),
+          ],
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: () {
@@ -568,29 +646,100 @@ class _MessageListState extends State<_MessageList> {
   }
 
   Widget _buildStarterNotesPanel(List<StarterTip> tips) {
+    final categoryMeta = kCategories.firstWhere(
+      (category) => category['label'] == widget.category,
+      orElse: () => kCategories.last,
+    );
+    final categoryColor = categoryMeta['color'] as Color;
+    final categoryIcon = categoryMeta['icon'] as IconData;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 16),
-          const Text(
-            'Official starter notes',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'These are editorial prompts from FlagPost, not user posts.',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: categoryColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: categoryColor.withValues(alpha: 0.16)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(categoryIcon, color: categoryColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${widget.locationDisplay} ${widget.category}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Official starter notes',
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Editorial prompts to seed this city board until travelers add local posts.',
+                  style: TextStyle(
+                    color: Colors.grey[700],
+                    fontSize: 14,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
-          ...tips.map((tip) => _buildStarterTipCard(tip)),
+          ...tips.asMap().entries.map(
+            (entry) => _buildStarterTipCard(
+              tip: entry.value,
+              index: entry.key + 1,
+              color: categoryColor,
+            ),
+          ),
           const SizedBox(height: 32),
           Center(
-            child: Text(
-              'Be the first to leave a useful note for ${widget.locationDisplay}.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 6,
+              children: [
+                Icon(Icons.edit_note, color: Colors.grey[600], size: 20),
+                Text(
+                  'Be the first to leave a useful note for ${widget.locationDisplay}.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 32),
@@ -599,43 +748,92 @@ class _MessageListState extends State<_MessageList> {
     );
   }
 
-  Widget _buildStarterTipCard(StarterTip tip) {
+  Widget _buildStarterTipCard({
+    required StarterTip tip,
+    required int index,
+    required Color color,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF2196F3).withValues(alpha: 0.05),
-        border: Border.all(
-          color: const Color(0xFF2196F3).withValues(alpha: 0.2),
-        ),
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.18)),
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.lightbulb_outline,
-                size: 20,
-                color: Color(0xFF2196F3),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  tip.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Color(0xFF2196F3),
-                  ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(12),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(tip.body, style: const TextStyle(fontSize: 15, height: 1.4)),
-        ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '$index',
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            tip.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              height: 1.25,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      tip.body,
+                      style: TextStyle(
+                        color: Colors.grey[800],
+                        fontSize: 15,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
