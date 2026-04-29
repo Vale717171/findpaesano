@@ -21,6 +21,11 @@ class RadarScreen extends StatefulWidget {
 }
 
 class _RadarScreenState extends State<RadarScreen> {
+  static const String _locationDeniedMessage =
+      'Location permission was denied. Nearby needs location access to show people around you. You can enable it from your device settings.';
+  static const String _locationPermanentlyDeniedMessage =
+      'Location permission is permanently denied. Nearby needs location access to show people around you. You can enable it from your device settings.';
+
   Position? _currentPosition;
   bool _isLoading = true;
   String? _error;
@@ -113,17 +118,14 @@ class _RadarScreenState extends State<RadarScreen> {
       if (status.isPermanentlyDenied) {
         if (mounted) {
           setState(() {
-            _error = 'Location permission permanently denied. Enable it from Settings.';
+            _error = _locationPermanentlyDeniedMessage;
             _isLoading = false;
           });
           await showDialog<void>(
             context: context,
             builder: (ctx) => AlertDialog(
-              title: const Text('Permission required'),
-              content: const Text(
-                'Location permission has been permanently denied. '
-                'Open app settings to enable it.',
-              ),
+              title: const Text('Location access needed'),
+              content: const Text(_locationPermanentlyDeniedMessage),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(ctx).pop(),
@@ -150,9 +152,9 @@ class _RadarScreenState extends State<RadarScreen> {
             context: context,
             barrierDismissible: false,
             builder: (ctx) => AlertDialog(
-              title: const Text('Location needed'),
+              title: const Text('Location access needed'),
               content: const Text(
-                'Per mostrarti i paesani vicini abbiamo bisogno della tua posizione. '
+                'Nearby needs location access to show people around you. '
                 'Your exact position is never shared — only an approximate area of a few km.',
               ),
               actions: [
@@ -169,7 +171,7 @@ class _RadarScreenState extends State<RadarScreen> {
           );
           if (proceed != true) {
             setState(() {
-              _error = 'Location permission denied.';
+              _error = _locationDeniedMessage;
               _isLoading = false;
             });
             return;
@@ -181,17 +183,14 @@ class _RadarScreenState extends State<RadarScreen> {
         if (status.isPermanentlyDenied) {
           if (mounted) {
             setState(() {
-              _error = 'Location permission permanently denied. Enable it from Settings.';
+              _error = _locationPermanentlyDeniedMessage;
               _isLoading = false;
             });
             await showDialog<void>(
               context: context,
               builder: (ctx) => AlertDialog(
-                title: const Text('Permission required'),
-                content: const Text(
-                  'Location permission has been permanently denied. '
-                  'Open app settings to enable it.',
-                ),
+                title: const Text('Location access needed'),
+                content: const Text(_locationPermanentlyDeniedMessage),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.of(ctx).pop(),
@@ -214,12 +213,14 @@ class _RadarScreenState extends State<RadarScreen> {
         if (!status.isGranted) {
           if (mounted) {
             setState(() {
-              _error = 'Location permission denied.';
+              _error = _locationDeniedMessage;
               _isLoading = false;
             });
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Location permission denied. Some features will be unavailable.'),
+                content: Text(
+                  'Location permission was denied. Nearby will stay unavailable until you enable location access.',
+                ),
               ),
             );
           }

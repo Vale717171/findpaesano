@@ -46,7 +46,7 @@ class ChatScreen extends StatelessWidget {
                                 size: 64, color: Colors.grey[300]),
                             const SizedBox(height: 16),
                             Text(
-                              'No active chats\nSend a signal from the Radar!',
+                              'No active chats\nOpen Nearby to send a signal.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                   color: Colors.grey[400],
