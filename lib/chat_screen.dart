@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'app_theme.dart';
 
 // Schermata principale Chat — lista delle conversazioni attive
 class ChatScreen extends StatelessWidget {
@@ -42,15 +43,28 @@ class ChatScreen extends StatelessWidget {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.chat_bubble_outline,
-                                size: 64, color: Colors.grey[300]),
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              size: 64,
+                              color: AppTheme.warmGray.withValues(alpha: 0.7),
+                            ),
                             const SizedBox(height: 16),
-                            Text(
-                              'No active chats\nOpen Nearby to send a signal.',
+                            const Text(
+                              'No conversations yet',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 16),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Open Nearby when a local note is not enough.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppTheme.mutedInk,
+                                fontSize: 15,
+                              ),
                             ),
                           ],
                         ),

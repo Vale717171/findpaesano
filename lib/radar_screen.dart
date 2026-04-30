@@ -10,6 +10,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ad_banner.dart';
+import 'app_theme.dart';
 
 enum FilterMode { compatriots, all }
 
@@ -154,7 +155,7 @@ class _RadarScreenState extends State<RadarScreen> {
             builder: (ctx) => AlertDialog(
               title: const Text('Location access needed'),
               content: const Text(
-                'Nearby needs location access to show people around you. '
+                'Nearby is optional. Use it only when a local note is not enough and you want to see people around you. '
                 'Your exact position is never shared — only an approximate area of a few km.',
               ),
               actions: [
@@ -628,13 +629,13 @@ class _RadarScreenState extends State<RadarScreen> {
                         height: 40,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2196F3),
+                            color: AppTheme.travelBlue,
                             shape: BoxShape.circle,
                             border: Border.all(
                                 color: Colors.white, width: 3),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.blue
+                                color: AppTheme.travelBlue
                                     .withValues(alpha: 0.4),
                                 blurRadius: 8,
                                 spreadRadius: 2,
@@ -671,8 +672,7 @@ class _RadarScreenState extends State<RadarScreen> {
                                 color: Colors.white,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color:
-                                      const Color(0xFF2196F3),
+                                  color: AppTheme.travelBlue,
                                   width: 2,
                                 ),
                                 boxShadow: [
@@ -738,12 +738,10 @@ class _RadarScreenState extends State<RadarScreen> {
                                     strokeWidth: 2),
                               ),
                             )
-                          : const Icon(Icons.search,
-                              color: Colors.grey),
+                          : const Icon(Icons.search, color: AppTheme.mutedInk),
                       suffixIcon: _searchLabel != null
                           ? IconButton(
-                              icon: const Icon(Icons.close,
-                                  color: Colors.grey),
+                              icon: const Icon(Icons.close, color: AppTheme.mutedInk),
                               onPressed: _clearSearch,
                             )
                           : null,
@@ -761,8 +759,8 @@ class _RadarScreenState extends State<RadarScreen> {
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _searchLabel != null
-                        ? const Color(0xFF2196F3)
-                        : Colors.white,
+                        ? AppTheme.travelBlue
+                        : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
@@ -782,7 +780,7 @@ class _RadarScreenState extends State<RadarScreen> {
                         size: 16,
                         color: _searchLabel != null
                             ? Colors.white
-                            : const Color(0xFF2196F3),
+                            : AppTheme.travelBlue,
                       ),
                       const SizedBox(width: 4),
                       Text(
@@ -792,7 +790,7 @@ class _RadarScreenState extends State<RadarScreen> {
                           fontSize: 13,
                           color: _searchLabel != null
                               ? Colors.white
-                              : Colors.black87,
+                              : AppTheme.ink,
                         ),
                       ),
                     ],
@@ -806,7 +804,7 @@ class _RadarScreenState extends State<RadarScreen> {
                 right: 16,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
+                        color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
@@ -849,7 +847,7 @@ class _RadarScreenState extends State<RadarScreen> {
                       color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF2196F3).withValues(alpha: 0.4),
+                        color: AppTheme.travelBlue.withValues(alpha: 0.4),
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -862,22 +860,20 @@ class _RadarScreenState extends State<RadarScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.shield,
-                            color: Color(0xFF2196F3), size: 18),
+                        const Icon(Icons.shield, color: AppTheme.travelBlue, size: 18),
                         const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
-                            'Your privacy is protected. Other users never see your exact location — only an approximate area of a few km.',
+                            'Your privacy is protected. Other users never see your exact location — only an approximate area of a few km. Nearby is optional and meant for the rare moment when a note is not enough.',
                             style: TextStyle(fontSize: 12, height: 1.4),
                           ),
                         ),
                         GestureDetector(
-                          onTap: () =>
+                        onTap: () =>
                               setState(() => _showPrivacyBanner = false),
                           child: const Padding(
                             padding: EdgeInsets.only(left: 4),
-                            child: Icon(Icons.close,
-                                size: 18, color: Colors.grey),
+                            child: Icon(Icons.close, size: 18, color: AppTheme.mutedInk),
                           ),
                         ),
                       ],
@@ -918,7 +914,7 @@ class _RadarScreenState extends State<RadarScreen> {
       // FAB: torna alla propria posizione (cancella anche la ricerca)
       floatingActionButton: FloatingActionButton(
         onPressed: _refreshPosition,
-        backgroundColor: const Color(0xFF2196F3),
+        backgroundColor: AppTheme.travelBlue,
         tooltip: 'My location',
         child: const Icon(Icons.my_location, color: Colors.white),
       ),
@@ -957,7 +953,7 @@ class _RadarScreenState extends State<RadarScreen> {
             ),
             const SizedBox(height: 4),
             Text(user['countryName'] ?? '',
-                style: TextStyle(color: Colors.grey[600])),
+                style: const TextStyle(color: AppTheme.mutedInk)),
             if (user['travelStatus'] != null) ...[
               const SizedBox(height: 4),
               Text(
@@ -965,17 +961,21 @@ class _RadarScreenState extends State<RadarScreen> {
                         (user['destination'] as String?)
                                 ?.isNotEmpty ==
                             true
-                    ? '🔍 Planning → ${user['destination']}'
-                    : '✈️ Currently here',
-                style: TextStyle(
-                    color: Colors.grey[500], fontSize: 13),
+                    ? 'Planning a trip to ${user['destination']}'
+                    : 'Currently nearby',
+                style: const TextStyle(
+                  color: AppTheme.mutedInk,
+                  fontSize: 13,
+                ),
               ),
             ],
             const SizedBox(height: 4),
             Text(
               '${(user['distance'] as double).toStringAsFixed(1)} km away',
-              style: TextStyle(
-                  color: Colors.grey[500], fontSize: 13),
+              style: const TextStyle(
+                color: AppTheme.mutedInk,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -986,7 +986,7 @@ class _RadarScreenState extends State<RadarScreen> {
                 icon: const Icon(Icons.wifi_tethering),
                 label: const Text('Send signal'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2196F3),
+                  backgroundColor: AppTheme.travelBlue,
                   foregroundColor: Colors.white,
                   padding:
                       const EdgeInsets.symmetric(vertical: 14),
@@ -1022,7 +1022,7 @@ class _FilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF2196F3) : Colors.transparent,
+          color: selected ? AppTheme.travelBlue : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -1030,7 +1030,7 @@ class _FilterChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: selected ? Colors.white : Colors.grey[600],
+            color: selected ? Colors.white : AppTheme.mutedInk,
           ),
         ),
       ),

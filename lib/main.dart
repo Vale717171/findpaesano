@@ -12,6 +12,7 @@ import 'settings_screen.dart';
 import 'board_screen.dart';
 import 'radar_screen.dart';
 import 'chat_screen.dart';
+import 'app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -53,20 +54,8 @@ class FindPaesanoApp extends StatelessWidget {
           title: 'FlagPost',
           debugShowCheckedModeBanner: false,
           themeMode: themeMode,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF2196F3),
-              brightness: Brightness.light,
-            ),
-            useMaterial3: true,
-          ),
-          darkTheme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF2196F3),
-              brightness: Brightness.dark,
-            ),
-            useMaterial3: true,
-          ),
+          theme: AppTheme.lightTheme(),
+          darkTheme: AppTheme.darkTheme(),
           routes: {
             '/home': (context) => const MainScreen(),
           },
@@ -132,9 +121,35 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset('assets/icon.png', height: 32),
-            const SizedBox(width: 8),
-            const Text('FlagPost'),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.travelBlue.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Image.asset('assets/icon.png', height: 24),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('FlagPost'),
+                  Text(
+                    'Local notes before local mistakes',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.mutedInk,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
         actions: [
