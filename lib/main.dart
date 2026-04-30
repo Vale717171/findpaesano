@@ -27,6 +27,14 @@ void main() async {
     return true;
   };
 
+  final prefs = await SharedPreferences.getInstance();
+  final savedTheme = prefs.getString('themeMode') ?? 'system';
+  themeNotifier.value = savedTheme == 'dark'
+      ? ThemeMode.dark
+      : savedTheme == 'light'
+          ? ThemeMode.light
+          : ThemeMode.system;
+
   runApp(const FindPaesanoApp());
 }
 
@@ -54,17 +62,10 @@ class _FindPaesanoAppState extends State<FindPaesanoApp> {
   }
 
   Future<void> _initializeNonEssentialServices() async {
-    // Keep the first frame cheap: ads and persisted theme can load after the
-    // app is already visible.
+    // Keep the first frame cheap: ads can load after the app is already
+    // visible. Theme restoration happens before runApp() to avoid a startup
+    // flicker when the user explicitly chose light or dark mode.
     unawaited(MobileAds.instance.initialize());
-
-    final prefs = await SharedPreferences.getInstance();
-    final savedTheme = prefs.getString('themeMode') ?? 'system';
-    themeNotifier.value = savedTheme == 'dark'
-        ? ThemeMode.dark
-        : savedTheme == 'light'
-            ? ThemeMode.light
-            : ThemeMode.system;
   }
 
   @override
