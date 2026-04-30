@@ -2,17 +2,39 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'starter_content.dart';
+import 'app_theme.dart';
 
 const List<Map<String, dynamic>> kCategories = [
-  {'label': 'Food', 'icon': Icons.restaurant, 'color': Color(0xFFFF9800)},
-  {'label': 'Places', 'icon': Icons.place, 'color': Color(0xFF4CAF50)},
+  {
+    'label': 'Food',
+    'icon': Icons.restaurant,
+    'color': AppTheme.terracotta,
+    'description': 'Where to eat without surrendering your wallet.',
+  },
+  {
+    'label': 'Places',
+    'icon': Icons.place,
+    'color': AppTheme.sageGreen,
+    'description': 'The city between the postcards.',
+  },
   {
     'label': 'Transport',
     'icon': Icons.directions_bus,
-    'color': Color(0xFF2196F3),
+    'color': AppTheme.travelBlue,
+    'description': 'Tickets, transfers and the ancient mysteries of local buses.',
   },
-  {'label': 'Warning', 'icon': Icons.warning, 'color': Color(0xFFF44336)},
-  {'label': 'Other', 'icon': Icons.more_horiz, 'color': Color(0xFF9E9E9E)},
+  {
+    'label': 'Warning',
+    'icon': Icons.warning,
+    'color': AppTheme.mutedRed,
+    'description': 'Small traps, odd rules and things locals learn the hard way.',
+  },
+  {
+    'label': 'Other',
+    'icon': Icons.more_horiz,
+    'color': Color(0xFF8F7E68),
+    'description': 'Tiny wisdom that refuses to fit in a box.',
+  },
 ];
 
 const List<Map<String, String>> kSuggestedCities = [
@@ -85,116 +107,169 @@ class _BoardScreenState extends State<BoardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('City boards')),
+      appBar: AppBar(title: const Text('Boards')),
       body: _boardLocation == null ? _buildLocationPicker() : _buildBoard(),
     );
   }
 
   // ── Schermata "scegli la località" ────────────────────────────────────────
   Widget _buildLocationPicker() {
+    final theme = Theme.of(context);
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: AppTheme.screenPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 32),
+          const SizedBox(height: 12),
           Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2196F3).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(
-              Icons.location_city,
-              size: 36,
-              color: Color(0xFF2196F3),
+            padding: const EdgeInsets.all(22),
+            decoration: AppTheme.paperCardDecoration(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppTheme.travelBlue.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.location_city,
+                    size: 30,
+                    color: AppTheme.travelBlue,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Pick a city',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Every place has unwritten rules. Find the notes people wish they had before arriving.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.mutedInk,
+                    height: 1.45,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          const Text(
-            'Pick a city',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Every board is organized by city, so tips, warnings and practical notes stay focused on the place you are visiting.',
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.grey[600],
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 18),
           TextField(
             controller: _locationController,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.search,
             onSubmitted: (_) => _applyLocation(),
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
+              labelText: 'City',
               hintText: 'e.g. Tokyo, Rome, Barcelona...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFF2196F3),
-                  width: 2,
+              prefixIcon: Icon(Icons.search),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _locationController.text.trim().isEmpty
+                  ? null
+                  : _applyLocation,
+              icon: const Icon(Icons.menu_book_outlined),
+              label: const Text('Browse notes'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.travelBlue,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           const Text(
             'Suggested cities',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: kSuggestedCities.map((city) {
-              final name = city['name']!;
-              final country = city['country']!;
-              return ActionChip(
-                avatar: const Icon(Icons.location_on_outlined, size: 18),
-                label: Text('$name · $country'),
-                onPressed: () => _selectSuggestedCity(name),
-                backgroundColor: const Color(
-                  0xFF2196F3,
-                ).withValues(alpha: 0.08),
-                side: BorderSide(
-                  color: const Color(0xFF2196F3).withValues(alpha: 0.18),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              );
-            }).toList(),
+          const SizedBox(height: 6),
+          Text(
+            'A few boards with notes already waiting to be found.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppTheme.mutedInk,
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _locationController.text.trim().isEmpty
-                  ? null
-                  : _applyLocation,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2196F3),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('Browse', style: TextStyle(fontSize: 16)),
+            height: 118,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: kSuggestedCities.length,
+              separatorBuilder: (_, unusedIndex) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final city = kSuggestedCities[index];
+                final name = city['name']!;
+                final country = city['country']!;
+                return SizedBox(
+                  width: 186,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    onTap: () => _selectSuggestedCity(name),
+                    child: Ink(
+                      decoration: AppTheme.tintedPanel(
+                        context,
+                        accent: index.isEven
+                            ? AppTheme.postcardYellow
+                            : AppTheme.travelBlue,
+                        tint: 0.12,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Icon(
+                              Icons.push_pin_outlined,
+                              color: index.isEven
+                                  ? AppTheme.terracotta
+                                  : AppTheme.travelBlue,
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  country,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppTheme.mutedInk,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           const SizedBox(height: 24),
@@ -208,7 +283,7 @@ class _BoardScreenState extends State<BoardScreen> {
                   'See something inappropriate? Tap ··· on any message to report it. Messages reported by multiple users are hidden automatically.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey[500],
+                    color: AppTheme.mutedInk,
                     height: 1.4,
                   ),
                 ),
@@ -224,16 +299,22 @@ class _BoardScreenState extends State<BoardScreen> {
   Widget _buildBoard() {
     return Column(
       children: [
-        // Barra con la città selezionata e pulsante "Change"
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: const Color(0xFF2196F3).withValues(alpha: 0.08),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          decoration: BoxDecoration(
+            color: AppTheme.travelBlue.withValues(alpha: 0.08),
+            border: Border(
+              bottom: BorderSide(
+                color: AppTheme.travelBlue.withValues(alpha: 0.14),
+              ),
+            ),
+          ),
           child: Row(
             children: [
               const Icon(
                 Icons.location_city,
-                color: Color(0xFF2196F3),
+                color: AppTheme.travelBlue,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -244,21 +325,24 @@ class _BoardScreenState extends State<BoardScreen> {
                     Text(
                       _boardLocation!,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2196F3),
-                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.travelBlue,
+                        fontSize: 16,
                       ),
                     ),
                     Text(
-                      'City board',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      'Notebook of local notes',
+                      style: TextStyle(
+                        color: AppTheme.mutedInk,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
               TextButton(
                 onPressed: _resetLocation,
-                child: const Text('Change'),
+                child: const Text('Change city'),
               ),
             ],
           ),
@@ -297,35 +381,12 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = category['color'] as Color;
+    final description = category['description'] as String;
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 12,
-        ),
-        leading: CircleAvatar(
-          backgroundColor: (category['color'] as Color).withValues(alpha: 0.15),
-          child: Icon(
-            category['icon'] as IconData,
-            color: category['color'] as Color,
-          ),
-        ),
-        title: Text(
-          category['label'] as String,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Tips for $locationDisplay'),
-            _MessageCount(
-              category: category['label'] as String,
-              locationKey: locationKey,
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      margin: const EdgeInsets.only(bottom: 14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -337,6 +398,78 @@ class _CategoryCard extends StatelessWidget {
             ),
           );
         },
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(category['icon'] as IconData, color: color),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category['label'] as String,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: AppTheme.mutedInk,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            locationDisplay,
+                            style: TextStyle(
+                              color: color,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        _MessageCount(
+                          category: category['label'] as String,
+                          locationKey: locationKey,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.arrow_forward_rounded, size: 20, color: color),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -366,9 +499,9 @@ class _MessageCount extends StatelessWidget {
         final count = snapshot.data!.docs.length;
         return Text(
           count == 0
-              ? 'No recent messages'
-              : '$count message${count == 1 ? '' : 's'} this week',
-          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ? 'No notes yet'
+              : '$count note${count == 1 ? '' : 's'} this week',
+          style: const TextStyle(color: AppTheme.mutedInk, fontSize: 12),
         );
       },
     );
@@ -612,12 +745,22 @@ class _MessageListState extends State<_MessageList> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox, size: 64, color: Colors.grey[300]),
+            Icon(
+              Icons.archive_outlined,
+              size: 64,
+              color: AppTheme.warmGray.withValues(alpha: 0.7),
+            ),
             const SizedBox(height: 16),
-            Text(
-              'No archived messages',
+            const Text(
+              'No older notes yet',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[400], fontSize: 16),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Once this board grows, older notes will settle here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.mutedInk, fontSize: 14),
             ),
           ],
         ),
@@ -661,10 +804,10 @@ class _MessageListState extends State<_MessageList> {
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: categoryColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: categoryColor.withValues(alpha: 0.16)),
+            decoration: AppTheme.tintedPanel(
+              context,
+              accent: categoryColor,
+              tint: 0.1,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -686,17 +829,17 @@ class _MessageListState extends State<_MessageList> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${widget.locationDisplay} ${widget.category}',
+                            '${widget.locationDisplay} · ${widget.category}',
                             style: const TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(
-                            'Official starter notes',
+                          const Text(
+                            'Starter notes from FlagPost',
                             style: TextStyle(
-                              color: Colors.grey[700],
+                              color: AppTheme.mutedInk,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -707,10 +850,10 @@ class _MessageListState extends State<_MessageList> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                Text(
-                  'Editorial prompts to seed this city board until travelers add local posts.',
+                const Text(
+                  'Editorial prompts, not user posts. Real notes from people will appear here as the board grows.',
                   style: TextStyle(
-                    color: Colors.grey[700],
+                    color: AppTheme.mutedInk,
                     fontSize: 14,
                     height: 1.35,
                   ),
@@ -733,11 +876,15 @@ class _MessageListState extends State<_MessageList> {
               crossAxisAlignment: WrapCrossAlignment.center,
               spacing: 6,
               children: [
-                Icon(Icons.edit_note, color: Colors.grey[600], size: 20),
+                const Icon(
+                  Icons.edit_note,
+                  color: AppTheme.mutedInk,
+                  size: 20,
+                ),
                 Text(
                   'Be the first to leave a useful note for ${widget.locationDisplay}.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600]),
+                  style: const TextStyle(color: AppTheme.mutedInk),
                 ),
               ],
             ),
@@ -755,17 +902,8 @@ class _MessageListState extends State<_MessageList> {
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.18)),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+      decoration: AppTheme.paperCardDecoration(context).copyWith(
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -822,8 +960,8 @@ class _MessageListState extends State<_MessageList> {
                     const SizedBox(height: 10),
                     Text(
                       tip.body,
-                      style: TextStyle(
-                        color: Colors.grey[800],
+                      style: const TextStyle(
+                        color: AppTheme.ink,
                         fontSize: 15,
                         height: 1.4,
                       ),
@@ -865,30 +1003,44 @@ class _MessageListState extends State<_MessageList> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.forum_outlined, size: 64, color: Colors.grey[300]),
+            Icon(
+              Icons.sticky_note_2_outlined,
+              size: 64,
+              color: AppTheme.warmGray.withValues(alpha: 0.72),
+            ),
             const SizedBox(height: 16),
             const Text(
-              'No tips here yet.',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              'No local notes here yet.',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'That usually means nobody has written down the obvious mistakes yet.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppTheme.mutedInk, height: 1.4),
             ),
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+              decoration: AppTheme.tintedPanel(
+                context,
+                accent: AppTheme.postcardYellow,
+                tint: 0.18,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Starter prompts',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    'What would help the next person?',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Useful things to post:\n$promptIdeas',
-                    style: TextStyle(color: Colors.grey[700], height: 1.5),
+                    'Useful notes to leave:\n$promptIdeas',
+                    style: const TextStyle(
+                      color: AppTheme.mutedInk,
+                      height: 1.5,
+                    ),
                   ),
                 ],
               ),
@@ -897,7 +1049,7 @@ class _MessageListState extends State<_MessageList> {
             Text(
               'Be the first to leave a useful note for ${widget.locationDisplay}.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+              style: const TextStyle(color: AppTheme.mutedInk),
             ),
           ],
         ),
@@ -1297,8 +1449,13 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'New message',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            'Leave a note',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Short, local, and useful beats perfect.',
+            style: TextStyle(color: AppTheme.mutedInk),
           ),
           const SizedBox(height: 16),
 
@@ -1307,23 +1464,10 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
             controller: _locationController,
             textCapitalization: TextCapitalization.words,
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Location',
               hintText: 'e.g. Rome, Tokyo...',
-              prefixIcon: const Icon(
-                Icons.location_on,
-                color: Color(0xFF2196F3),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFF2196F3),
-                  width: 2,
-                ),
-              ),
+              prefixIcon: Icon(Icons.location_on),
             ),
           ),
           const SizedBox(height: 12),
@@ -1334,18 +1478,8 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
             maxLength: 300,
             maxLines: 4,
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: 'Write your message...',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFF2196F3),
-                  width: 2,
-                ),
-              ),
+            decoration: const InputDecoration(
+              hintText: 'Write the note you wish somebody had left for you...',
             ),
           ),
           const SizedBox(height: 12),
@@ -1355,7 +1489,7 @@ class _NewMessageSheetState extends State<_NewMessageSheet> {
             child: ElevatedButton(
               onPressed: _canPost ? _postMessage : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2196F3),
+                backgroundColor: AppTheme.travelBlue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
